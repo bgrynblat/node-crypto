@@ -506,7 +506,7 @@ app.get("/charts/:pairs", auth, function(req, res) {
 
 
 global.verbose = false;
-var port = 5999;
+var port = process.env.PORT || 5999;
 
 for(var i=0; i<process.argv.length; i++) {
 	if(process.argv[i] == "-v")	verbose = true;

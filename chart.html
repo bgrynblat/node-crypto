@@ -1,0 +1,192 @@
+<html>
+
+<head>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.7.0/Chart.bundle.min.js"></script>
+</head>
+
+<body>
+
+	<div id="charts"></div>
+	<script>
+
+	var data = %data%;
+
+	window.chartColors = {
+		red: 'rgb(255, 99, 132)',
+		orange: 'rgb(255, 159, 64)',
+		yellow: 'rgb(255, 205, 86)',
+		green: 'rgb(75, 192, 192)',
+		blue: 'rgb(54, 162, 235)',
+		purple: 'rgb(153, 102, 255)',
+		grey: 'rgb(201, 203, 207)'
+	};
+
+	// var label = Object.keys(data)[0];
+	// var times = [], values = [], trends = [];
+	// for(var i in data[label].history) {
+	// 	var trend = data[label].history[i].trend;
+	// 	var tfor = data[label].history[i]["for"];
+
+	// 	var tv = 0;
+	// 	var color = "#0000ff";
+	// 	// datasets[0].points[4].fillColor
+	// 	if(trend == "up") {
+	// 		tv = 1*(tfor);
+	// 		color = "#00ff00";
+	// 	}
+	// 	else if(trend == "down") {
+	// 		tv = -1*(tfor);
+	// 		color = "#ff0000";
+	// 	}
+
+	// 	for(var j=0; j<tfor; j++) {
+	// 		times.push(new Date(data[label].history[i].until));
+	// 		values.push(data[label].history[i].ends_at);
+	// 		trends.push(tv);
+	// 	}
+	// }
+
+	var charts = document.getElementById("charts");
+
+	var interval = 5000;
+	var datasets = {}, yaxes = {}, times = {}, trends = {};
+
+	for(var index=0; index<Object.keys(data).length; index++) {
+
+		var pair = Object.keys(data)[index];
+		var array = data[pair];
+
+		datasets[pair] = [];
+		times[pair] = [];
+
+		console.log(pair);
+
+		for(var i in array) {
+			var hh = array[i];	//hh = { time: 1506606440551, values: {"KRAKEN":{"value":"3545.30000","volume":"9753.93359752","time":"2017-09-28T13:47:15.938Z"}} }
+
+			times[pair].push(new Date(hh.time));
+
+			for(var j=0; j<Object.keys(hh.values).length; j++) {
+				var label = Object.keys(hh.values)[j];
+
+				// datasets[pair][j] = {
+				// 	label: label,
+				// 	backgroundColor: window.chartColors[Object.keys(window.chartColors)[i]],
+				// 	borderColor: window.chartColors[Object.keys(window.chartColors)[i]],
+			 //        data: values,
+			 //        fill: false,
+			 //        yAxisID: "y-axis-"+index,
+				// }
+
+				// datasets[pair][j].label = label;
+				if(datasets[pair][j] == undefined) {
+					datasets[pair][j] = {
+						data: [],
+						label: label,
+						backgroundColor: window.chartColors[Object.keys(window.chartColors)[j]],
+						borderColor: window.chartColors[Object.keys(window.chartColors)[j]],
+						fill: false,
+						yAxisID: "y-axis-"+index,
+					};
+				}
+
+				// console.log(hh.values[label].value)
+				datasets[pair][j].data.push(hh.values[label].value);
+			}
+		}
+
+		console.log(datasets[pair]);
+
+
+		// var pair = ;		
+		// var end_time = 0, end_val = 0, prev_val = 0;
+		// var values = [], trend = [], time = [];
+		// for(var i in data[pair].history) {
+
+		// 	var h = data[pair].history[i];
+		// 	for(var b in h) {
+
+		// 	}
+
+		// 	var tr = data[pair].history[i].trend;
+		// 	var tfor = data[pair].history[i]["for"];
+
+		// 	var tv = 0;
+		// 	var color = "#0000ff";
+		// 	// datasets[0].points[4].fillColor
+		// 	// if(tr == "up")			tv = (tfor);
+		// 	// else if(tr == "down")	tv = -(tfor);
+
+		// 	end_time = data[pair].history[i].until;
+		// 	end_val = data[pair].history[i].trend_starts_at;
+		// 	prev_val = (i == 0 ? end_val : data[pair].history[i-1].ends);
+		// 	var diff = end_val-prev_val;
+
+		// 	// for(var j=0; j<tfor; j++) {
+		// 	// 	var t = end_time-(tfor-(interval*(j+1)))
+		// 	// 	time.push(new Date(t));
+
+		// 	// 	var v = prev_val+(j*(diff/tfor));
+				
+		// 	// 	values.push(v);
+		// 	// 	trend.push(tv);
+		// 	// }
+		// 	time.push(new Date(data[pair].history[i].starts_at));
+		// 	values.push(data[pair].history[i].ends);
+		// 	trend.push(tr);
+		// }
+
+		// datasets[index] = [{
+		// 		label: pair,
+		// 		backgroundColor: window.chartColors[Object.keys(window.chartColors)[index]],
+		// 		borderColor: window.chartColors[Object.keys(window.chartColors)[index]],
+		//         data: values,
+		//         fill: false,
+		//         yAxisID: "y-axis-"+index,
+		// 	}, {
+		// 		label: "TREND %",
+		// 		backgroundColor: "#ddd",
+		// 		borderColor: "#aaa",
+		//         data: trend,
+		//         fill: true,
+		//         yAxisID: "y-axis-"+(index+1),
+		// 	}];
+
+		yaxes[pair] = [{
+	            type: "linear", // only linear but allow scale type registration. This allows extensions to exist solely for log scale for instance
+	            display: true,
+	            position: "left",
+	            id: "y-axis-"+index,
+	            // ticks: {fontColor: window.chartColors[Object.keys(window.chartColors)[index]]},
+	            gridLines: {
+	                        	drawOnChartArea: true, // only want the grid lines for one axis to show up
+	                    	},
+	    	}];
+
+    	charts.innerHTML+='<canvas id="c'+index+'" width="400" height="200"></canvas>';
+	}
+
+	for(var index=0; index<Object.keys(data).length; index++) {
+
+		var pair = Object.keys(data)[index];
+
+		var ctx = document.getElementById("c"+index).getContext('2d');
+		var myChart = new Chart(ctx, {
+		    type: 'line',
+		    data: {
+	            labels: times[pair],
+	            datasets: datasets[pair]
+	        },
+		    options: {
+		        scales: {
+		            yAxes: yaxes[pair],
+		        }
+		    }
+		});
+	}
+
+	</script>
+
+</body>
+
+</html>

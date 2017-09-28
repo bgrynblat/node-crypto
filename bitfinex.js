@@ -4,25 +4,23 @@ const qs     = require('qs');
 
 // Public/Private method names
 const methods = {
-	public  : [ 'Time', 'Assets', 'AssetPairs', 'Ticker', 'Depth', 'Trades', 'Spread', 'OHLC' ],
-	private : [ 'Balance', 'TradeBalance', 'OpenOrders', 'ClosedOrders', 'QueryOrders', 'TradesHistory', 'QueryTrades', 'OpenPositions', 'Ledgers', 'QueryLedgers', 'TradeVolume', 'AddOrder', 'CancelOrder', 'DepositMethods', 'DepositAddresses', 'DepositStatus', 'WithdrawInfo', 'Withdraw', 'WithdrawStatus', 'WithdrawCancel' ],
+	public  : [ 'pubticker' ],
+	private : [ ],
 };
 
 const pairs = {
-	BTCEUR: "XBTEUR",
-	BTCUSD: "XBTUSD",
-	ETHEUR: "ETHEUR",
+	BTCUSD: "BTCUSD",
 	ETHUSD: "ETHUSD",
 };
 
 // Default options
 const defaults = {
-	url     : 'https://api.kraken.com',
-	version : 0,
+	url     : 'https://api.bitfinex.com',
+	version : 1,
 	timeout : 5000,
 };
 
-const name = "KRAKEN";
+const name = "BITFINEX";
 
 // Create a signature for a request
 const getMessageSignature = (path, request, secret, nonce) => {
@@ -37,14 +35,14 @@ const getMessageSignature = (path, request, secret, nonce) => {
 };
 
 // Send an API request
-const rawRequest = async (url, headers, data, timeout) => {
+const rawRequest = async (url, method, headers, data, timeout) => {
 	// Set custom User-Agent string
-	headers['User-Agent'] = 'Kraken Javascript API Client';
+	headers['User-Agent'] = 'Bitfinex Javascript API Client';
 
 	const options = { headers, timeout };
 
 	Object.assign(options, {
-		method : 'POST',
+		method : method || 'POST',
 		body   : qs.stringify(data),
 	});
 
@@ -57,7 +55,7 @@ const rawRequest = async (url, headers, data, timeout) => {
 			.map((e) => e.substr(1));
 
 		if(!error.length) {
-			throw new Error("Kraken API returned an unknown error");
+			throw new Error("Bitfinex API returned an unknown error");
 		}
 
 		throw new Error(error.join(', '));
@@ -74,7 +72,7 @@ const rawRequest = async (url, headers, data, timeout) => {
  * @param {String}        [options.otp]     Two-factor password (optional) (also, doesn't work)
  * @param {Number}        [options.timeout] Maximum timeout (in milliseconds) for all API-calls (passed to `request`)
  */
-class KrakenClient {
+class Bitfinex {
 	constructor(key, secret, options) {
 		// Allow passing the OTP as the third argument for backwards compatibility
 		if(typeof options === 'string') {
@@ -86,13 +84,11 @@ class KrakenClient {
 
 	getTickerValue(pair, callback) {
 
-		var promise = this.api('Ticker', { pair : pairs[pair] }, callback);
+		var promise = this.api('pubticker', { pair : pair }, callback);
 		var promise2 = promise
 			.then((result) => {
-				var value = result.result[Object.keys(result.result)[0]]["c"][0];
-				var volume = result.result[Object.keys(result.result)[0]]["v"][1];
-
-				return {value: value, volume: volume, time: new Date()}
+				var time = (parseFloat(result.timestamp)*1000);
+				return {value: result.last_price, volume: result.volume, time: new Date(time)}
 			})
 			.catch((error) => {return error});
 
@@ -140,16 +136,16 @@ class KrakenClient {
 			params   = {};
 		}
 
-		const path     = '/' + this.config.version + '/public/' + method;
+		var path     = '/v' + this.config.version + '/' + method;
+		path += (params.pair != undefined ? "/"+params.pair : "")
 		const url      = this.config.url + path;
-		const response = rawRequest(url, {}, params, this.config.timeout);
+		const response = rawRequest(url, 'GET', {}, params, this.config.timeout);
 
 		if(typeof callback === 'function') {
 			response
 				.then((result) => callback(null, result))
 				.catch((error) => callback(error, null));
 		}
-
 		return response;
 	}
 
@@ -192,7 +188,7 @@ class KrakenClient {
 			'API-Sign' : signature,
 		};
 
-		const response = rawRequest(url, headers, params, this.config.timeout);
+		const response = rawRequest(url, 'POST', headers, params, this.config.timeout);
 
 		if(typeof callback === 'function') {
 			response
@@ -204,4 +200,4 @@ class KrakenClient {
 	}
 }
 
-module.exports = KrakenClient;
+module.exports = Bitfinex;

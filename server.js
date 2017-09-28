@@ -1,13 +1,21 @@
 const fs = require('fs');
 const express = require('express');
 const KrakenClient = require('./kraken.js');
+const BitfinexClient = require('./bitfinex.js');
+const stdin = process.openStdin();
 
 const key1 = process.env.KRAKEN_KEY;
 const secret1 = process.env.KRAKEN_SECRET;
+const onesignal_apikey = process.env.ONESIGNAL_APIKEY;
+const onesignal_appid = process.env.ONESIGNAL_APPID;
 
 const kraken = new KrakenClient(key1, secret1);
+const bitfinex = new BitfinexClient(key1, secret1);
 
-const stdin = process.openStdin();
+const brokers = {
+	"KRAKEN": kraken,
+	"BITFINEX": bitfinex
+}
 
 //==========================================================
 // INIT
@@ -22,17 +30,24 @@ if(key1 == undefined || secret1 == undefined) {
 // KRAKEN
 //==========================================================
 
+global.account = {
+	notifications: true
+};
 
 global.pairs = {
-	BTCEUR : {kraken_pair: "XBTEUR", threshold: .2, default_buy_price: 6},
-	ETHEUR : {kraken_pair: "ETHEUR", threshold: 1, default_buy_price: 6},
-	LTCEUR : {kraken_pair: "LTCEUR", threshold: 1, default_buy_price: 6},
+	BTCEUR : {brokers: ["KRAKEN"], threshold: 1, default_buy_price: 6},
+	ETHEUR : {brokers: ["KRAKEN"], threshold: 1, default_buy_price: 6},
+	LTCEUR : {brokers: ["KRAKEN"], threshold: 1, default_buy_price: 6},
+	BTCUSD : {brokers: ["KRAKEN", "BITFINEX"], threshold: 1, default_buy_price: 6},
+	ETHUSD : {brokers: ["KRAKEN", "BITFINEX"], threshold: 1, default_buy_price: 6},
+	LTCUSD : {brokers: ["KRAKEN", "BITFINEX"], threshold: 1, default_buy_price: 6},
 }
+global.archiving = true;
 global.history = [];
 global.send_orders = false;
 
 for(var i in global.pairs) {
-	global.pairs[i].current_value = null;
+	global.pairs[i].values = {};
 	global.pairs[i].last_order_value = null;
 	global.pairs[i].last_order_volume = null;
 	global.pairs[i].last_order_type = "buy";
@@ -45,6 +60,7 @@ for(var i in global.pairs) {
 	global.pairs[i].history = [];
 }
 
+global.interval = 5000;
 
 async function showBalance() {
 	var res = await kraken.api('Balance');
@@ -56,42 +72,58 @@ async function showBalance() {
 
 async function updateTickerValue(pair) {
 	try {
-		var res = await kraken.api('Ticker', { pair : pair || "BTCEUR" });
-		if(res.error[0] != null)	console.err(res.error);
-		else {
-			var newval = parseFloat(res.result[Object.keys(res.result)[0]]["c"][0]);
-			var curval = global.pairs[pair].current_value;
+		for(var i in global.pairs[pair].brokers) {
+			var brokername = global.pairs[pair].brokers[i];
+			var broker = brokers[brokername];
+			var res = await broker.getTickerValue(pair);
 
-			var prevtrend = global.pairs[pair].trend+"";
-			var newtrend;
-			var v = newval/curval;
-			if(v < 1) {
-				newtrend = "down";		//DOWN
-
-			}
-			else if(v > 1) {
-				newtrend = "up";		//UP
-			}
-			else {
-				newtrend = "stable";	//STABLE
-			}
-			
-			if(prevtrend == newtrend)	global.pairs[pair].trending_for++;	//TREND HAS NOT CHANGED
-			else {	// NEW TREND
-
-				var tfor = global.pairs[pair].trending_for+0;
-				var trend = ((newval-global.pairs[pair].trend_start_value)/global.pairs[pair].trend_start_value)*100;
-				var now = Date.now();
-				global.pairs[pair].history.push({trend: trend, "for": tfor, starts_at: global.pairs[pair].trend_starts_at+0, ends_at: now, ends: newval});
-				global.pairs[pair].trending_for = 1;
-				global.pairs[pair].trend_starts_at = now;
-				global.pairs[pair].trend = newtrend;
-				global.pairs[pair].trend_start_value = newval;
-			}
-			global.pairs[pair].current_value = newval;
+			global.pairs[pair].values[brokername] = res;
 		}
+
+		// var newval = parseFloat(res.result[Object.keys(res.result)[0]]["c"][0]);
+		// var curval = global.pairs[pair].current_value;
+
+		// var prevtrend = global.pairs[pair].trend+"";
+		// var newtrend;
+		// var v = newval/curval;
+		// if(v < 1) {
+		// 	newtrend = "down";		//DOWN
+
+		// }
+		// else if(v > 1) {
+		// 	newtrend = "up";		//UP
+		// }
+		// else {
+		// 	newtrend = "stable";	//STABLE
+		// }
+		
+		// if(prevtrend == newtrend)	global.pairs[pair].trending_for++;	//TREND HAS NOT CHANGED
+		// else {	// NEW TREND
+
+		// 	var tfor = global.pairs[pair].trending_for+0;
+		// 	var trend = (((newval-global.pairs[pair].trend_start_value)/global.pairs[pair].trend_start_value)*100)+prevtrend;
+		// 	var now = Date.now();
+
+		// 	if(trend < 100 && trend > -100) {
+		// 		var obj = {trend: trend, "for": tfor, starts_at: global.pairs[pair].trend_starts_at+0, ends_at: now, ends: newval};
+		// 		global.pairs[pair].history.push(obj);
+
+		// 		if(obj.trend > global.pairs[pair].threshold || obj.trend < -global.pairs[pair].threshold) {
+		// 			var msg = pair+" has "+(obj.trend < 0 ? "dropped -" : "raised +")+obj.trend.toFixed(3)+"%";
+		// 			sendNotification("", msg);
+		// 		}
+		// 	}
+
+		// 	global.pairs[pair].trending_for = 1;
+		// 	global.pairs[pair].trend_starts_at = now;
+		// 	global.pairs[pair].trend = newtrend;
+		// 	global.pairs[pair].trend_start_value = newval;
+		// }
+		// global.pairs[pair].current_value = newval;
+
+		// var obj = {trend: trend, "for": tfor, starts_at: global.pairs[pair].trend_starts_at+0, ends_at: now, ends: newval};
 	} catch(error) {
-		console.log(error);
+		console.log("ERROR FOR PAIR : "+pair, error);
 	}
 }
 
@@ -169,14 +201,14 @@ async function getClosedOrders(verbose) {
 }
 
 function showValueOf(pairname) {
-	var val = global.pairs[pairname].current_value;
+	var vals = global.pairs[pairname].value;
 	var thresh = global.pairs[pairname].threshold;
 
 	var vof = pairname.substr(0,3);
 	var vin = pairname.substr(pairname.length-3);
 
 	if(val != null)	{
-		console.log(Date()+" - 1 "+vof+" = "+val+" "+vin+" ===> +"+thresh+"% / -"+thresh+"% = "+val*(1+(thresh/100))+" / "+val*(1-(thresh/100)));
+		// console.log(Date()+" - 1 "+vof+" = "+val+" "+vin+" ===> +"+thresh+"% / -"+thresh+"% = "+val*(1+(thresh/100))+" / "+val*(1-(thresh/100)));
 	}
 }
 
@@ -280,31 +312,8 @@ function sendSellOrder(pairname, volume) {
 	})();
 }
 
-// function addToHistory() {
-// 	var h = {time: Date.now()};
-// 	for(var i in global.pairs) {
-// 		// global.pairs[i].current_value = null;
-// 		// global.pairs[i].last_order_value = null;
-// 		// global.pairs[i].last_order_volume = null;
-// 		// global.pairs[i].last_order_type = "buy";
-// 		// global.pairs[i].orders = {};
-// 		// global.pairs[i].order_in_progress = false;
-// 		// global.pairs[i].trend = null;
-// 		// global.pairs[i].trending_for = 1;
-// 		// global.pairs[i].trend_value = 0;
-// 		// global.pairs[i].trend_starts_at = Date.now();
-// 		// global.pairs[i].history = [];
-
-
-// 		h[i] = {
-// 			value: global.pairs[i].current_value,
-// 			trend: global.pairs[i].trend,
-// 		};
-// 	}
-// }
-
 function algorithm(pairname) {
-	showValueOf(pairname);
+	// showValueOf(pairname);
 
 	if(!global.send_orders)	return;
 
@@ -324,18 +333,28 @@ function algorithm(pairname) {
 	}
 }
 
+function archive() {
+
+	var now = Date.now();
+	var hh = {time: now, pairs: {}}
+	for(var i in global.pairs) {
+		hh.pairs[i] = JSON.parse(JSON.stringify(global.pairs[i].values));
+	}
+
+	if(global.history.length > 18000)	global.history.splice(0, 10);
+	if(global.archiving)				global.history.push(hh);
+}
+
 function dumpMemory() {
 	var fs = require('fs');
-	fs.writeFile(Date.now()+"-dump.json", JSON.stringify(global.pairs), function(err) {
+	fs.writeFile(Date.now()+"-dump.json", JSON.stringify(global.history), function(err) {
 		if(err)	return console.log(err);
 		console.log("The file was saved!");
 	});
 }
 
 function clearMemory() {
-	for(var i in global.pairs) {
-		global.pairs[i].history = (global.pairs[i].history.length > 0 ? [global.pairs[i].history[global.pairs[i].history.length-1]] : []);
-	}
+	global.history = (global.history.length > 0 ? [global.history[global.history.length-1]] : []);
 }
 
 function autoClear() {
@@ -350,21 +369,71 @@ function autoClear() {
 }
 
 function generateHTML(pairs) {
-	var html = fs.readFileSync(__dirname+"/test.html", {encoding: "utf-8"});
+	var html = fs.readFileSync(__dirname+"/chart.html", {encoding: "utf-8"});
 
 	var data = {};
-	for(var i in pairs) {
-		if(global.pairs[pairs[i]] != undefined)	data[pairs[i]] = global.pairs[pairs[i]];
+
+	for(var i in global.history) {
+		var h = JSON.parse(JSON.stringify(global.history[i]));
+
+		for(var j in pairs) {
+			var pair = pairs[j];
+	
+			if(data[pair] == undefined)		data[pair] = [];
+			if(h.pairs[pair] != undefined)	data[pair].push({time: h.time, values: h.pairs[pair]});
+		}
 	}
+
+	console.log(data);
 
 	html = html.replace(/%data%/g, JSON.stringify(data));
 
 	return html;
 }
 
+var sendNotification = function(title, message, app_id) {
+	var headers = {
+		"Content-Type": "application/json; charset=utf-8",
+		"Authorization": "Basic "+onesignal_apikey
+	};
+
+	var msg = { 
+		app_id: app_id || onesignal_appid,
+		contents: {"en": message},
+		included_segments: ["All"]
+	};
+
+	// console.log("SENDING NOTIFICATION");
+
+	var options = {
+		host: "onesignal.com",
+		port: 443,
+		path: "/api/v1/notifications",
+		method: "POST",
+		headers: headers
+	};
+
+	var https = require('https');
+	var req = https.request(options, function(res) {  
+		res.on('data', function(data) {
+		  // console.log("Response:");
+		  // console.log(JSON.parse(data));
+		});
+	});
+
+	req.on('error', function(e) {
+		console.log("ERROR:");
+		console.log(e);
+	});
+
+	req.write(JSON.stringify(msg));
+	req.end();
+};
+
 function printMenu() {
 	console.log("======= MENU =======");
 	console.log("t - Toggle adding orders (current:"+global.send_orders+")");
+	console.log("a - Toggle archiving (current:"+global.archiving+")");
 	console.log("m - Display memory");
 	console.log("c - Check closed orders");
 	console.log("o - Check open orders");
@@ -379,13 +448,14 @@ function printMenu() {
 stdin.on('data', function(chunk) {
 	// console.log("Got chunk: " + chunk); 
 
-	if(chunk == "m\n")		console.log(global.pairs);
+	if(chunk == "m\n")		console.log(global.history);
 	else if(chunk == "h\n")	printMenu();
 	else if(chunk == "c\n")	getClosedOrders(true);
 	else if(chunk == "o\n")	getOpenOrders(true);
 	else if(chunk == "t\n")	global.send_orders = !global.send_orders;
 	else if(chunk == "b\n")	showBalance();
 	else if(chunk == "d\n")	dumpMemory();
+	else if(chunk == "a\n")	global.archiving = !global.archiving;
 	else if(chunk == "r\n") {
 		dumpMemory();
 		clearMemory();
@@ -396,11 +466,12 @@ getOpenOrders();
 getClosedOrders();
 setInterval(getOpenOrders, 10000)
 setInterval(getClosedOrders, 10000)
+setInterval(archive, 10000);
 
 
 for(var i in global.pairs) {
 	updateTickerValue(i);
-	setInterval(updateTickerValue, 5000, i);
+	setInterval(updateTickerValue, global.interval, i);
 	setInterval(algorithm, 20000, i);
 }
 
@@ -419,7 +490,6 @@ var auth = function (req, res, next) {
 	};
 
 	next();
-
 };
 
 app.get("/charts/:pairs", auth, function(req, res) {
@@ -447,4 +517,3 @@ for(var i=0; i<process.argv.length; i++) {
 
 var server = app.listen(port);
 console.log('Listening on port '+port+""+(global.verbose ? " VERBOSE" : "")+'...');
-

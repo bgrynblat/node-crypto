@@ -2,7 +2,7 @@
   "name": "kraken-api",
   "version": "1.0.0",
   "description": "kraken.com API client library for NodeJS",
-  "author": "Robert Myers (https://github.com/nothingisdead)",
+  "author": "Benjamin Grynblat",
   "contributors": [],
   "license": "MIT",
   "dependencies": {
@@ -10,17 +10,9 @@
     "qs": ">=6.4.0",
     "express": "latest"
   },
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/nothingisdead/npm-kraken-api"
-  },
-  "main": "kraken.js",
+  "main": "server.js",
   "engines": {
     "node": ">=0.10"
-  },
-  "bugs": {
-    "url": "https://github.com/nothingisdead/npm-kraken-api/issues",
-    "email": "rbmyr8@gmail.com"
   },
   "readmeFilename": "README.md"
 }

@@ -13,6 +13,16 @@ const pairs = {
 	BTCUSD: "XBTUSD",
 	ETHEUR: "ETHEUR",
 	ETHUSD: "ETHUSD",
+	LTCEUR: "LTCEUR",
+	LTCUSD: "LTCUSD",
+	ETHBTC: "ETHXBT",
+	LTCBTC: "LTCXBT"
+};
+
+const withdraw_fees = {
+	LTC: 0.001,
+	BTC: 0.001,
+	ETH: 0.005
 };
 
 // Default options
@@ -89,6 +99,12 @@ class KrakenClient {
 		var promise = this.api('Ticker', { pair : pairs[pair] }, callback);
 		var promise2 = promise
 			.then((result) => {
+
+				// console.log("KRAKEN", result);
+				if(result.name == "HTTPError") {
+					// console.log("HERE");
+					return undefined;
+				}
 				var value = result.result[Object.keys(result.result)[0]]["c"][0];
 				var volume = result.result[Object.keys(result.result)[0]]["v"][1];
 

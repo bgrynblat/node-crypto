@@ -1,8 +1,11 @@
 const fs = require('fs');
 const express = require('express');
-const KrakenClient = require('./kraken.js');
-const BitfinexClient = require('./bitfinex.js');
 const stdin = process.openStdin();
+
+const KrakenClient = require('./brokers/kraken.js');
+const BitfinexClient = require('./brokers/bitfinex.js');
+const ACXClient = require('./brokers/acx.js');
+const CoinbaseClient = require('./brokers/coinbase.js');
 
 const key1 = process.env.KRAKEN_KEY;
 const secret1 = process.env.KRAKEN_SECRET;
@@ -11,10 +14,14 @@ const onesignal_appid = process.env.ONESIGNAL_APPID;
 
 const kraken = new KrakenClient(key1, secret1);
 const bitfinex = new BitfinexClient(key1, secret1);
+const acx = new ACXClient(key1, secret1);
+const coinbase = new CoinbaseClient(key1, secret1);
 
 const brokers = {
 	"KRAKEN": kraken,
-	"BITFINEX": bitfinex
+	"BITFINEX": bitfinex,
+	"ACX": acx,
+	"COINBASE": coinbase
 }
 
 //==========================================================
@@ -27,7 +34,7 @@ if(key1 == undefined || secret1 == undefined) {
 }
 
 //==========================================================
-// KRAKEN
+// FETCH FROM BROKERS
 //==========================================================
 
 global.account = {
@@ -35,29 +42,42 @@ global.account = {
 };
 
 global.pairs = {
-	BTCEUR : {brokers: ["KRAKEN"], threshold: 1, default_buy_price: 6},
-	ETHEUR : {brokers: ["KRAKEN"], threshold: 1, default_buy_price: 6},
-	LTCEUR : {brokers: ["KRAKEN"], threshold: 1, default_buy_price: 6},
-	BTCUSD : {brokers: ["KRAKEN", "BITFINEX"], threshold: 1, default_buy_price: 6},
-	ETHUSD : {brokers: ["KRAKEN", "BITFINEX"], threshold: 1, default_buy_price: 6},
-	LTCUSD : {brokers: ["KRAKEN", "BITFINEX"], threshold: 1, default_buy_price: 6},
-}
+	// BTCEUR : {brokers: ["KRAKEN"], threshold: 1, default_buy_price: 6},
+	// ETHEUR : {brokers: ["KRAKEN"], threshold: 1, default_buy_price: 6},
+	// LTCEUR : {brokers: ["KRAKEN"], threshold: 1, default_buy_price: 6},
+	BTCUSD : {brokers: ["KRAKEN", "BITFINEX", "COINBASE"], threshold: 20, default_buy_price: 6},
+	ETHUSD : {brokers: ["KRAKEN", "BITFINEX"], threshold: 20, default_buy_price: 6},
+	LTCUSD : {brokers: ["KRAKEN", "BITFINEX"], threshold: 20, default_buy_price: 6},
+	// BTCAUD : {brokers: [], threshold: 1, default_buy_price: 6},
+	ETHBTC : {brokers: ["KRAKEN", "BITFINEX", "COINBASE"], threshold: 0.002, default_buy_price: 6},
+	LTCBTC : {brokers: ["KRAKEN", "BITFINEX", "COINBASE"], threshold: 0.002, default_buy_price: 6},
+};
+
 global.archiving = true;
 global.history = [];
-global.send_orders = false;
+// global.send_orders = false;
 
 for(var i in global.pairs) {
 	global.pairs[i].values = {};
-	global.pairs[i].last_order_value = null;
-	global.pairs[i].last_order_volume = null;
-	global.pairs[i].last_order_type = "buy";
-	global.pairs[i].orders = {};
-	global.pairs[i].order_in_progress = false;
-	global.pairs[i].trend = null;
-	global.pairs[i].trending_for = 1;
-	global.pairs[i].trend_start_value = 0;
-	global.pairs[i].trend_starts_at = Date.now();
-	global.pairs[i].history = [];
+
+	global.pairs[i].lowest = null;
+	global.pairs[i].lowest_at = null;
+	global.pairs[i].lowest_from = null;
+
+	global.pairs[i].highest = null;
+	global.pairs[i].highest_at = null;
+	global.pairs[i].highest_from = null;
+
+	// global.pairs[i].last_order_value = null;
+	// global.pairs[i].last_order_volume = null;
+	// global.pairs[i].last_order_type = "buy";
+	// global.pairs[i].orders = {};
+	// global.pairs[i].order_in_progress = false;
+	// global.pairs[i].trend = null;
+	// global.pairs[i].trending_for = 1;
+	// global.pairs[i].trend_start_value = 0;
+	// global.pairs[i].trend_starts_at = Date.now();
+	// global.pairs[i].history = [];
 }
 
 global.interval = 5000;
@@ -71,60 +91,100 @@ async function showBalance() {
 }
 
 async function updateTickerValue(pair) {
-	try {
-		for(var i in global.pairs[pair].brokers) {
+	for(var i in global.pairs[pair].brokers) {
+		try {
 			var brokername = global.pairs[pair].brokers[i];
+			// console.log(pair, brokername);
 			var broker = brokers[brokername];
 			var res = await broker.getTickerValue(pair);
 
-			global.pairs[pair].values[brokername] = res;
+			// if(broker == coinbase)	console.log(brokername, pair, res);
+
+			if(res == undefined)	break;
+
+			var pp = global.pairs[pair];
+			pp.values[brokername] = res;
+
+			if(pp.lowest == null || pp.lowest > res.value) {
+				pp.lowest = res.value;
+				pp.lowest_at = res.time;
+				pp.lowest_from = brokername;
+			}
+
+			if(pp.highest == null || pp.highest < res.value) {
+				pp.highest = res.value;
+				pp.highest_at = res.time;
+				pp.highest_from = brokername;
+			}
+
+			var low, high;
+			for(var j in pp.values) {
+				// if(pair == "BTCUSD")	console.log(j+" -> "+pp.values[j].value);
+				if(low == undefined || pp.values[j].value < low.value)		low = {value: pp.values[j].value, from: j};
+				if(high == undefined || pp.values[j].value > high.value)	high = {value: pp.values[j].value, from: j};
+			}
+
+			pp.diff = high.value-low.value;
+			// if(pp.diff < 0)	break;
+
+			// if(pair == "BTCUSD") {
+				// console.log("HIGH "+high.value+"/"+high.from, "LOW "+low.value+"/"+low.from);
+				// console.log("DIFF "+pair+" ("+high.from+" > "+low.from+"): "+pp.diff+" "+pair.substr(3));
+			// }
+
+			if(pp.diff >= global.pairs[pair].threshold) {
+				var msg = "DIFF "+pair+" ("+high.from+" > "+low.from+"): "+pp.diff+" "+pair.substr(3);
+				sendNotification("", msg);
+			}
+
+
+		} catch(error) {
+			console.log("ERROR FOR BROKER "+brokername+", PAIR : "+pair, error);
 		}
-
-		// var newval = parseFloat(res.result[Object.keys(res.result)[0]]["c"][0]);
-		// var curval = global.pairs[pair].current_value;
-
-		// var prevtrend = global.pairs[pair].trend+"";
-		// var newtrend;
-		// var v = newval/curval;
-		// if(v < 1) {
-		// 	newtrend = "down";		//DOWN
-
-		// }
-		// else if(v > 1) {
-		// 	newtrend = "up";		//UP
-		// }
-		// else {
-		// 	newtrend = "stable";	//STABLE
-		// }
-		
-		// if(prevtrend == newtrend)	global.pairs[pair].trending_for++;	//TREND HAS NOT CHANGED
-		// else {	// NEW TREND
-
-		// 	var tfor = global.pairs[pair].trending_for+0;
-		// 	var trend = (((newval-global.pairs[pair].trend_start_value)/global.pairs[pair].trend_start_value)*100)+prevtrend;
-		// 	var now = Date.now();
-
-		// 	if(trend < 100 && trend > -100) {
-		// 		var obj = {trend: trend, "for": tfor, starts_at: global.pairs[pair].trend_starts_at+0, ends_at: now, ends: newval};
-		// 		global.pairs[pair].history.push(obj);
-
-		// 		if(obj.trend > global.pairs[pair].threshold || obj.trend < -global.pairs[pair].threshold) {
-		// 			var msg = pair+" has "+(obj.trend < 0 ? "dropped -" : "raised +")+obj.trend.toFixed(3)+"%";
-		// 			sendNotification("", msg);
-		// 		}
-		// 	}
-
-		// 	global.pairs[pair].trending_for = 1;
-		// 	global.pairs[pair].trend_starts_at = now;
-		// 	global.pairs[pair].trend = newtrend;
-		// 	global.pairs[pair].trend_start_value = newval;
-		// }
-		// global.pairs[pair].current_value = newval;
-
-		// var obj = {trend: trend, "for": tfor, starts_at: global.pairs[pair].trend_starts_at+0, ends_at: now, ends: newval};
-	} catch(error) {
-		console.log("ERROR FOR PAIR : "+pair, error);
 	}
+
+	// var newval = parseFloat(res.result[Object.keys(res.result)[0]]["c"][0]);
+	// var curval = global.pairs[pair].current_value;
+
+	// var prevtrend = global.pairs[pair].trend+"";
+	// var newtrend;
+	// var v = newval/curval;
+	// if(v < 1) {
+	// 	newtrend = "down";		//DOWN
+
+	// }
+	// else if(v > 1) {
+	// 	newtrend = "up";		//UP
+	// }
+	// else {
+	// 	newtrend = "stable";	//STABLE
+	// }
+	
+	// if(prevtrend == newtrend)	global.pairs[pair].trending_for++;	//TREND HAS NOT CHANGED
+	// else {	// NEW TREND
+
+	// 	var tfor = global.pairs[pair].trending_for+0;
+	// 	var trend = (((newval-global.pairs[pair].trend_start_value)/global.pairs[pair].trend_start_value)*100)+prevtrend;
+	// 	var now = Date.now();
+
+	// 	if(trend < 100 && trend > -100) {
+	// 		var obj = {trend: trend, "for": tfor, starts_at: global.pairs[pair].trend_starts_at+0, ends_at: now, ends: newval};
+	// 		global.pairs[pair].history.push(obj);
+
+	// 		if(obj.trend > global.pairs[pair].threshold || obj.trend < -global.pairs[pair].threshold) {
+	// 			var msg = pair+" has "+(obj.trend < 0 ? "dropped -" : "raised +")+obj.trend.toFixed(3)+"%";
+	// 			sendNotification("", msg);
+	// 		}
+	// 	}
+
+	// 	global.pairs[pair].trending_for = 1;
+	// 	global.pairs[pair].trend_starts_at = now;
+	// 	global.pairs[pair].trend = newtrend;
+	// 	global.pairs[pair].trend_start_value = newval;
+	// }
+	// global.pairs[pair].current_value = newval;
+
+	// var obj = {trend: trend, "for": tfor, starts_at: global.pairs[pair].trend_starts_at+0, ends_at: now, ends: newval};
 }
 
 async function getOpenOrders(verbose) {
@@ -196,7 +256,7 @@ async function getClosedOrders(verbose) {
 	    	}
 		}
 	} catch(error) {
-		console.log("ERROR FETCHING CLOSED ORDERS", error.code);
+		console.log("ERROR FETCHING CLOSED ORDERS", error.code || error);
 	}
 }
 
@@ -345,12 +405,34 @@ function archive() {
 	if(global.archiving)				global.history.push(hh);
 }
 
-function dumpMemory() {
+function dumpMemory(filename) {
 	var fs = require('fs');
-	fs.writeFile(Date.now()+"-dump.json", JSON.stringify(global.history), function(err) {
-		if(err)	return console.log(err);
-		console.log("The file was saved!");
-	});
+	var file = __dirname+"/"+(filename || Date.now()+"-dump.json");
+
+	fs.writeFileSync(file, JSON.stringify({pairs: global.pairs, history: global.history}));
+}
+
+function readMemoryBackup(filename) {
+	try {
+		var fs = require('fs');
+		var file = __dirname+"/"+(filename || "memdata.json");
+		var data = fs.readFileSync(file, "utf-8");
+
+		var json = JSON.parse(data);
+		global.history = json.history;
+
+		for(var i in json.pairs) {
+			global.pairs[i].values = json.pairs[i].values;
+
+			global.pairs[i].lowest = json.pairs[i].lowest;
+			global.pairs[i].lowest_at = json.pairs[i].lowest_at;
+			global.pairs[i].lowest_from = json.pairs[i].lowest_from;
+
+			global.pairs[i].highest = json.pairs[i].highest;
+			global.pairs[i].highest_at = json.pairs[i].highest_at;
+			global.pairs[i].highest_from = json.pairs[i].highest_from;
+		}
+	} catch(error) {}
 }
 
 function clearMemory() {
@@ -370,9 +452,7 @@ function autoClear() {
 
 function generateHTML(pairs) {
 	var html = fs.readFileSync(__dirname+"/chart.html", {encoding: "utf-8"});
-
 	var data = {};
-
 	for(var i in global.history) {
 		var h = JSON.parse(JSON.stringify(global.history[i]));
 
@@ -383,11 +463,9 @@ function generateHTML(pairs) {
 			if(h.pairs[pair] != undefined)	data[pair].push({time: h.time, values: h.pairs[pair]});
 		}
 	}
-
-	console.log(data);
+	// console.log(data);
 
 	html = html.replace(/%data%/g, JSON.stringify(data));
-
 	return html;
 }
 
@@ -445,10 +523,28 @@ function printMenu() {
 	console.log("Type value then press enter");
 }
 
+//===============================================================
+// INIT
+//===============================================================
+process.stdin.resume();//so the program will not close instantly
+
+function exitHandler() {
+    console.log("Exiting... Saving data first !");
+    dumpMemory("memdata.json");
+    process.exit();
+}
+
+// process.on('exit', exitHandler);	//do something when app is closing
+process.on('SIGINT', exitHandler);	//catches ctrl+c event
+
+process.on('uncaughtException', function(err) {	//catches uncaught exceptions
+        console.log("Exception caught : "+err);
+});
+
 stdin.on('data', function(chunk) {
 	// console.log("Got chunk: " + chunk); 
 
-	if(chunk == "m\n")		console.log(global.history);
+	if(chunk == "m\n")		console.log(global.pairs);
 	else if(chunk == "h\n")	printMenu();
 	else if(chunk == "c\n")	getClosedOrders(true);
 	else if(chunk == "o\n")	getOpenOrders(true);
@@ -462,10 +558,12 @@ stdin.on('data', function(chunk) {
 	}
 });
 
-getOpenOrders();
-getClosedOrders();
-setInterval(getOpenOrders, 10000)
-setInterval(getClosedOrders, 10000)
+readMemoryBackup();
+
+// getOpenOrders();
+// getClosedOrders();
+// setInterval(getOpenOrders, 10000)
+// setInterval(getClosedOrders, 10000)
 setInterval(archive, 10000);
 
 

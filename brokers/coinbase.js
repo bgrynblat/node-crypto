@@ -4,23 +4,29 @@ const qs     = require('qs');
 
 // Public/Private method names
 const methods = {
-	public  : [ 'pubticker' ],
+	public  : [ 'exchange-rates' ],
 	private : [ ],
 };
 
 const pairs = {
 	BTCUSD: "BTCUSD",
-	ETHUSD: "ETHUSD",
+	BTCEUR: "BTCEUR",
+	LTCUSD: "LTCUSD",
+	ETHBTC: "ETHBTC",
+	LTCBTC: "LTCBTC"
 };
 
+const currencies = ["BTC", "ETH", "LTC"];
+
+// hhttps://api.coinbase.com/v2/exchange-rates?currency=BTC
 // Default options
 const defaults = {
-	url     : 'https://api.bitfinex.com',
-	version : 1,
+	url     : 'https://api.coinbase.com',
+	version : 2,
 	timeout : 5000,
 };
 
-const name = "BITFINEX";
+const name = "ACS";
 
 // Create a signature for a request
 const getMessageSignature = (path, request, secret, nonce) => {
@@ -37,7 +43,7 @@ const getMessageSignature = (path, request, secret, nonce) => {
 // Send an API request
 const rawRequest = async (url, method, headers, data, timeout) => {
 	// Set custom User-Agent string
-	headers['User-Agent'] = 'Bitfinex Javascript API Client';
+	headers['User-Agent'] = 'Coinbase Javascript API Client';
 
 	const options = { headers, timeout };
 
@@ -55,7 +61,7 @@ const rawRequest = async (url, method, headers, data, timeout) => {
 			.map((e) => e.substr(1));
 
 		if(!error.length) {
-			throw new Error("Bitfinex API returned an unknown error");
+			throw new Error("Coinbase API returned an unknown error");
 		}
 
 		throw new Error(error.join(', '));
@@ -64,15 +70,10 @@ const rawRequest = async (url, method, headers, data, timeout) => {
 	return response;
 };
 
-/**
- * KrakenClient connects to the Kraken.com API
- * @param {String}        key               API Key
- * @param {String}        secret            API Secret
- * @param {String|Object} [options={}]      Additional options. If a string is passed, will default to just setting `options.otp`.
- * @param {String}        [options.otp]     Two-factor password (optional) (also, doesn't work)
- * @param {Number}        [options.timeout] Maximum timeout (in milliseconds) for all API-calls (passed to `request`)
- */
-class Bitfinex {
+var requests = [];
+var values = {};
+
+class Coinbase {
 	constructor(key, secret, options) {
 		// Allow passing the OTP as the third argument for backwards compatibility
 		if(typeof options === 'string') {
@@ -80,28 +81,79 @@ class Bitfinex {
 		}
 
 		this.config = Object.assign({ key, secret }, defaults, options);
+
+		this.updateTickers();
+		setInterval(this.updateTickers, 5000);
+		setInterval(this.processRequest, 1000, this);
 	}
 
-	getTickerValue(pair, callback) {
+	updateTickers() {
+		for(var i in currencies) {
+			var cur = currencies[i];
+			var exists = false;
+			for(var j in requests) {
+				if(requests[j].method == "exchange-rates" && requests[j].currency == cur) {
+					exists = true;
+					break;
+				}
+			}
 
-		var promise = this.api('pubticker', { pair : pair }, callback);
+			if(!exists)	requests.push({method: "exchange-rates", currency: cur});
+		}
+	}
+
+	getTickerValue(pair) {
+		var promise = (async() => {
+			// console.log(values);
+
+			var c1 = pair.substr(0,3);
+			var c2 = pair.substr(3);
+
+			var val, time;
+			try {
+				time = values[c1].time;
+				val = values[c1].rates[c2];
+			} catch(error) {
+				val = undefined;
+				time = undefined;
+			}
+
+			var obj = {value: val, volume: 0, time: (time == undefined ? undefined : new Date(time))};
+			// console.log(obj);
+			return obj;
+		})();
+		promise.then((result) => {
+				// console.log("RESULT", result);
+				return result;
+			})
+			.catch((error) => {return error});
+
+		return promise;
+		console.log("PROMISE", promise);
+	}
+
+	fetchTickerValue(currency, callback) {
+		var promise = this.api('exchange-rates', { currency : currency }, callback);
 		var promise2 = promise
 			.then((result) => {
-				var time = (parseFloat(result.timestamp)*1000);
-				return {value: result.last_price, volume: result.volume, time: new Date(time)}
+				// var time = (parseFloat(result.timestamp)*1000);
+				// var obj = {value: result.last_price, volume: result.volume, time: new Date(time)};
+				values[currency] = {time: Date.now(), rates: result.data.rates};
 			})
 			.catch((error) => {return error});
 
 		return promise2;
 	}
 
-	/**
-	 * This method makes a public or private API request.
-	 * @param  {String}   method   The API method (public or private)
-	 * @param  {Object}   params   Arguments to pass to the api call
-	 * @param  {Function} callback A callback function to be executed when the request is complete
-	 * @return {Object}            The request object
-	 */
+	processRequest(scope) {
+		if(requests.length > 0) {
+			var req = JSON.parse(JSON.stringify(requests[0]));
+			// console.log("Processing request 1 on "+requests.length+" : "+JSON.stringify(req));
+			scope.fetchTickerValue(req.currency);
+			requests.splice(0,1);
+		}
+	}
+
 	api(method, params, callback) {
 		// Default params to empty object
 		if(typeof params === 'function') {
@@ -120,13 +172,6 @@ class Bitfinex {
 		}
 	}
 
-	/**
-	 * This method makes a public API request.
-	 * @param  {String}   method   The API method (public or private)
-	 * @param  {Object}   params   Arguments to pass to the api call
-	 * @param  {Function} callback A callback function to be executed when the request is complete
-	 * @return {Object}            The request object
-	 */
 	publicMethod(method, params, callback) {
 		params = params || {};
 
@@ -137,7 +182,8 @@ class Bitfinex {
 		}
 
 		var path     = '/v' + this.config.version + '/' + method;
-		path += (params.pair != undefined ? "/"+params.pair : "")
+		path += (params.currency != undefined ? "?currency="+params.currency : "")
+
 		const url      = this.config.url + path;
 		const response = rawRequest(url, 'GET', {}, params, this.config.timeout);
 
@@ -149,13 +195,6 @@ class Bitfinex {
 		return response;
 	}
 
-	/**
-	 * This method makes a private API request.
-	 * @param  {String}   method   The API method (public or private)
-	 * @param  {Object}   params   Arguments to pass to the api call
-	 * @param  {Function} callback A callback function to be executed when the request is complete
-	 * @return {Object}            The request object
-	 */
 	privateMethod(method, params, callback) {
 		params = params || {};
 
@@ -200,4 +239,4 @@ class Bitfinex {
 	}
 }
 
-module.exports = Bitfinex;
+module.exports = Coinbase;

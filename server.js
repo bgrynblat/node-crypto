@@ -310,9 +310,9 @@ function clearMemory() {
 }
 
 function autoClear() {
-	var nb = 0;
-	for(var i in global.pairs)
-		nb += global.pairs[i].history.length;
+	var nb = global.history;
+	// for(var i in global.pairs)
+	// 	nb += global.pairs[i].history.length;
 
 	if(nb >= 200000) {
 		dumpMemory();
@@ -320,10 +320,16 @@ function autoClear() {
 	}
 }
 
-function generateChartHTML(pairs) {
+function generateChartHTML(pairs, min) {
 	var html = fs.readFileSync(__dirname+"/html/chart.html", {encoding: "utf-8"});
 	var data = {};
-	for(var i in global.history) {
+
+	var minutes = min || 60;	//Default 1 hour
+	minutes = (minutes > 240 ? 240 : minutes);	//Max 4 hours
+
+	var max = (minutes*60000)/global.interval;
+
+	for(var i = 0; i < global.history.length && i<=max; i++) {
 		var h = JSON.parse(JSON.stringify(global.history[i]));
 
 		for(var j in pairs) {
@@ -510,7 +516,7 @@ app.get("/charts/:pairs", auth, function(req, res) {
 		if(pairs.indexOf(".") > 0)	pairs = pairs.split(".");
 		else						pairs = [pairs];
 
-		res.status(200).send(generateChartHTML(pairs));
+		res.status(200).send(generateChartHTML(pairs, req.query.minutes));
 	} catch(err) {
 		console.log(err)
 	}

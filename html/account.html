@@ -1,0 +1,104 @@
+<html>
+
+<head>
+	<script
+	  src="https://code.jquery.com/jquery-3.2.1.min.js"
+	  integrity="sha256-hwg4gsxgFZhOsEEamdOYGBf13FyQuiTwlAQgxVSNgt4="
+	  crossorigin="anonymous"></script>
+</head>
+
+<body>
+
+	<form id="account" action="javaScript:update()">
+		<div>My Account</div>
+		Email: <input id="email" type="text" name="email" disabled><br>
+		Api Key: <input id="apikey" type="text" name="apikey" disabled><br>
+		Notifications:
+			<input type="radio" id="notif_on" name="notifications" value="true"> Yes
+			<input type="radio" id="notif_off" name="notifications" value="false"> No<br>
+
+		<input type="submit" value="Update"/>
+	</form>
+
+	<div id="error"></div>
+	<img id="loader" src="https://i.pinimg.com/originals/16/4d/3e/164d3e03f742b3b0765e569536844bd1.gif" style="display: none;"/>
+
+	<form id="newuser" style="display: %display_form%" action="javaScript:newuser()">
+		<div>New User</div>
+		Email: <input id="email" type="email" name="email" required><br>
+		Password: <input id="password" type="password" name="password" required><br>
+
+		<input type="submit" value="Create User"/>
+	</form>
+
+	<input type="button" onclick="javascript:logout()" value="Log Out" />
+
+	<script>
+
+		var data = %data%;
+
+		$("#email")[0].value = data.email;
+		$("#apikey")[0].value = data.apikey;
+
+		var noton = $("#notif_on")[0];
+		var notoff = $("#notif_off")[0];
+
+		if(data.notifications == true) {
+			noton.checked = true;
+			notoff.checked = false;
+		} else {
+			notoff.checked = true;
+			noton.checked = false;	
+		}
+
+		function update() {
+			$("#error")[0].innerHTML = "";
+
+			var loader = $("#loader")[0];
+			loader.style.display = "block";
+
+			var form = $("form")[0];
+			form.style.display = "none";
+
+			var obj = {
+				notifications: ($("#notif_on")[0].checked == true),
+			};
+
+			console.log(obj);
+
+
+			$.post("/account", obj, function(data) {
+				window.location.reload();
+			}).fail(function(error) {
+				$("#error")[0].innerHTML = error.responseText;
+				form.style.display = "block";
+				loader.style.display = "none";
+				document.cookie = "";
+			});
+		}
+
+		function newuser() {
+			var email = $("#newuser input#email")[0].value;
+			var pass = $("#newuser input#password")[0].value;
+
+			$.post("/account/new", {email: email, password: pass}, function(data) {
+				window.location.reload();
+			}).fail(function(error) {
+				$("#error")[0].innerHTML = error.responseText;
+				form.style.display = "block";
+				loader.style.display = "none";
+				document.cookie = "";
+			});
+		}
+
+		function logout() {
+			document.cookie = 'apikey=;expires=Thu, 01 Jan 1970 00:00:01 GMT;';
+			window.location.reload();
+		}
+
+
+	</script>
+
+</body>
+
+</html>

@@ -1,0 +1,51 @@
+<html>
+
+<head>
+	<script
+	  src="https://code.jquery.com/jquery-3.2.1.min.js"
+	  integrity="sha256-hwg4gsxgFZhOsEEamdOYGBf13FyQuiTwlAQgxVSNgt4="
+	  crossorigin="anonymous"></script>
+</head>
+
+<body>
+
+	<script>
+		function login() {
+
+			var loader = $("#loader")[0];
+			loader.style.display = "block";
+
+			var form = $("#login")[0];
+			form.style.display = "none";
+
+			var email = $("#email")[0].value;
+			var password = $("#password")[0].value;
+
+			$("#error")[0].innerHTML = "";
+
+			$.post("/login", {email: email, password: password}, function(data) {
+				console.log(data);
+				// form.style.display = "block";
+				document.cookie = "apikey="+data;
+				window.location.reload();
+			}).fail(function(error) {
+				$("#error")[0].innerHTML = error.responseText;
+				form.style.display = "block";
+				loader.style.display = "none";
+				document.cookie = 'apikey=;expires=Thu, 01 Jan 1970 00:00:01 GMT;';
+			});
+		}
+	</script>
+
+	<form id="login" action="javaScript:login()">
+		Email: <input id="email" type="text" name="email" required><br>
+  		Password: <input id="password" type="password" name="password" required><br>
+		<input type="submit" value="Log In" />
+	</form>
+
+	<div id="error"></div>
+	<img id="loader" src="https://i.pinimg.com/originals/16/4d/3e/164d3e03f742b3b0765e569536844bd1.gif" style="display: none;"/>
+
+</body>
+
+</html>

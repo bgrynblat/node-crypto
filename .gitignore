@@ -1,3 +1,5 @@
 secrets.sh
 package-lock.json
 node_modules/
+accounts.json
+memdata.json

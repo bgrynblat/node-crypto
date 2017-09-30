@@ -1,5 +1,7 @@
 const fs = require('fs');
 const express = require('express');
+const bodyParser = require('body-parser');
+const crypto = require('crypto');
 const stdin = process.openStdin();
 
 const KrakenClient = require('./brokers/kraken.js');
@@ -37,20 +39,24 @@ if(key1 == undefined || secret1 == undefined) {
 // FETCH FROM BROKERS
 //==========================================================
 
-global.account = {
-	notifications: true
+global.users = {
+	accounts: {},
+	apikeys: {}
 };
+// global.accounts = {
+// 	notifications: true
+// };
 
 global.pairs = {
 	// BTCEUR : {brokers: ["KRAKEN"], threshold: 1, default_buy_price: 6},
 	// ETHEUR : {brokers: ["KRAKEN"], threshold: 1, default_buy_price: 6},
 	// LTCEUR : {brokers: ["KRAKEN"], threshold: 1, default_buy_price: 6},
-	BTCUSD : {brokers: ["KRAKEN", "BITFINEX", "COINBASE"], threshold: 20, default_buy_price: 6},
-	ETHUSD : {brokers: ["KRAKEN", "BITFINEX"], threshold: 20, default_buy_price: 6},
-	LTCUSD : {brokers: ["KRAKEN", "BITFINEX"], threshold: 20, default_buy_price: 6},
+	BTCUSD : {brokers: ["KRAKEN", "BITFINEX", "COINBASE"], threshold: 20, default_buy_price: 6, last_notification: 0},
+	ETHUSD : {brokers: ["KRAKEN", "BITFINEX"], threshold: 20, default_buy_price: 6, last_notification: 0},
+	LTCUSD : {brokers: ["KRAKEN", "BITFINEX"], threshold: 20, default_buy_price: 6, last_notification: 0},
 	// BTCAUD : {brokers: [], threshold: 1, default_buy_price: 6},
-	ETHBTC : {brokers: ["KRAKEN", "BITFINEX", "COINBASE"], threshold: 0.002, default_buy_price: 6},
-	LTCBTC : {brokers: ["KRAKEN", "BITFINEX", "COINBASE"], threshold: 0.002, default_buy_price: 6},
+	ETHBTC : {brokers: ["KRAKEN", "BITFINEX", "COINBASE"], threshold: 0.002, default_buy_price: 6, last_notification: 0},
+	LTCBTC : {brokers: ["KRAKEN", "BITFINEX", "COINBASE"], threshold: 0.002, default_buy_price: 6, last_notification: 0},
 };
 
 global.archiving = true;
@@ -134,7 +140,10 @@ async function updateTickerValue(pair) {
 
 			if(pp.diff >= global.pairs[pair].threshold) {
 				var msg = "DIFF "+pair+" ("+high.from+" > "+low.from+"): "+pp.diff+" "+pair.substr(3);
-				sendNotification("", msg);
+				if(pair.last_notification+300000 < Date.now()) {
+					pair.last_notification = Date.now();
+					sendNotification("", msg);
+				}
 			}
 
 
@@ -187,211 +196,26 @@ async function updateTickerValue(pair) {
 	// var obj = {trend: trend, "for": tfor, starts_at: global.pairs[pair].trend_starts_at+0, ends_at: now, ends: newval};
 }
 
-async function getOpenOrders(verbose) {
-	try {
-		var res = await kraken.api('OpenOrders', { trades : true });
+// function algorithm(pairname) {
+// 	// showValueOf(pairname);
 
-	    if(res.error[0] != null)        console.err(res.error);
-	    else {
-	    	var nb = Object.keys(res.result["open"]).length;
+// 	if(!global.send_orders)	return;
 
-	    	for(var i = 0; i<nb; i++) {
-	    		var key = Object.keys(res.result["open"])[i];
-	    		var order = res.result["open"][key];
+// 	var pair = global.pairs[pairname];
+// 	var nb_orders = Object.keys(pair.orders).length;
+// 	// if(pair.order_in_progress)	console.log("ORDER IN PROGRESS FOR PAIR "+pairname+"...");
+// 	if(nb_orders == 0) {
+// 		if(!pair.order_in_progress) {
+// 			// console.log("NO ORDER FOR PAIR "+pp);
+// 			// sendSellOrder(vof, vin);
 
-	    		if(verbose)	console.log(key+" (REF:"+order["userref"]+" STATUS:"+order["status"]+"): "+order["descr"]["order"]);
-	    		// console.log(order["descr"]["pair"]);
-
-	    		for(var j in global.pairs) {
-	    			var oo = global.pairs[j];
-	    			if(oo.kraken_pair == order["descr"]["pair"]) {
-
-	    				if(oo.orders[key] == undefined)
-	    					console.log("NEW ORDER FOR PAIR "+order["descr"]["pair"]+" : "+key);
-
-	    				oo.orders[key] = order;
-	    				oo.last_order_value = order["descr"]["price"];
-	    			}
-	       		}
-
-	    		// console.log("ORDER : "+key+" => ",);
-	    	}
-		}
-	} catch(error) {
-		// console.log("ERROR", error);
-	}
-}
-
-async function getClosedOrders(verbose) {
-	try {
-		var res = await kraken.api('ClosedOrders', { trades : true });
-	    if(res.error[0] != null)        console.err(res.error);
-	    else {
-	    	var nb = Object.keys(res.result["closed"]).length;
-	    	for(var i = nb-1; i>=0; i--) {
-	    		var key = Object.keys(res.result["closed"])[i];
-	    		var order = res.result["closed"][key];
-
-	    		if(verbose)	console.log(key+" (REF:"+order["userref"]+" STATUS:"+order["status"]+"): "+order["descr"]["order"]);
-
-	    		for(var j in global.pairs) {
-	    			var oo = global.pairs[j];
-	    			if(oo.kraken_pair == order["descr"]["pair"]) {
-
-	    				if(order.status == "closed") {
-			    			// console.log("LAST ORDER :", order);
-			    			oo.last_order_value = parseFloat(order.descr.price);
-			    			oo.last_order_volume = parseFloat(order.vol_exec);
-			    			oo.last_order_type = order.descr.type;
-			    		}
-
-	    				if(oo.orders[key] != undefined) {
-	    					console.log("ORDER "+key+" closed");
-	    					delete oo.orders[key];
-	    				}
-	    			}
-	       		}
-
-	    		// console.log("ORDER : "+key+" => ",);
-	    	}
-		}
-	} catch(error) {
-		console.log("ERROR FETCHING CLOSED ORDERS", error.code || error);
-	}
-}
-
-function showValueOf(pairname) {
-	var vals = global.pairs[pairname].value;
-	var thresh = global.pairs[pairname].threshold;
-
-	var vof = pairname.substr(0,3);
-	var vin = pairname.substr(pairname.length-3);
-
-	if(val != null)	{
-		// console.log(Date()+" - 1 "+vof+" = "+val+" "+vin+" ===> +"+thresh+"% / -"+thresh+"% = "+val*(1+(thresh/100))+" / "+val*(1-(thresh/100)));
-	}
-}
-
-function sendBuyOrder(pairname) {
-	var vof = pairname.substr(0,3);
-	var vin = pairname.substr(pairname.length-3);
-
-	var pair = global.pairs[pairname];
-
-	var volume = pair.default_buy_price/pair.current_value;
-	volume = volume.toFixed(3);
-
-	pair.order_in_progress = true;
-
-	(async() => {
-
-		var price = pair.current_value*1;
-		price = price.toFixed(2);
-
-		try {
-			var ref = Date.now()+"";
-			ref = parseInt("1"+ref.substr(ref.length-7));
-
-			console.log(Date()+" - +++ BUY ORDER "+volume+" "+vof+" FOR "+pair.current_value*volume+" "+vin+" (AT:"+pair.current_value+" "+vin+" - REF: "+ref+")");
-			var params = {
-				pair: pairname,
-				type: "buy",
-				ordertype: "limit",
-				volume: volume,
-				price: price,
-				userref: ref
-			};
-
-			var res = await kraken.api('AddOrder', params);
-
-			if(res.error[0] != null)	console.err("THERE", res.error);
-			else {
-				console.log("BUY ORDER SUCCESSFULLY SENT : ",res.result["descr"])
-				pair.order_in_progress = false;
-				pair.last_order_value = price;
-				pair.code = 1;
-			}
-		} catch(error) {
-			var msg = "ERROR SENDING ORDER : "+error.code;
-			pair.order_in_progress = false;
-
-			if(error.code == "ETIMEDOUT") {
-				// msg += " - RETRYING...";
-				// sendBuyOrder(vof, vin, volume);
-			} else msg = "ERROR SENDING ORDER REF: "+ref+" - "+error;
-
-			// console.log(msg);
-		}
-	})();
-}
-
-function sendSellOrder(pairname, volume) {
-	var vof = pairname.substr(0,3);
-	var vin = pairname.substr(pairname.length-3);
-
-	var pair = global.pairs[pairname];
-	volume = volume || pair.last_order_volume;
-	
-	var price = pair.last_order_value*(1+(pair.threshold/100));
-	price = price.toFixed(1);
-
-	if(price < pair.current_value)	price = pair.current_value;
-
-	pair.order_in_progress = true;
-
-	(async() => {
-
-		try {
-			var ref = Date.now()+"";
-			ref = parseInt("2"+ref.substr(ref.length-7));
-
-			console.log(Date()+" - --- SELL ORDER "+volume+" "+vof+" FOR "+price*volume+" "+vin+" (AT:"+price+" "+vin+" - REF: "+ref+")");
-			var params = {
-				pair: pairname,
-				type: "sell",
-				ordertype: "limit",
-				volume: volume,
-				price: price,
-				userref: ref
-			};
-
-			var res = await kraken.api('AddOrder', params);
-			
-			// console.log("HERE", res);
-
-			if(res.error[0] != null)	console.err("THERE", res.error);
-			else {
-				console.log("SELL ORDER SUCCESSFULLY SENT : ",res.result["descr"])
-				pair.order_in_progress = false;
-				pair.code = 0;
-			}
-		} catch(error) {
-			// console.log("ERROR SENDING ORDER REF: "+ref, error);
-			pair.order_in_progress = false;
-		}
-	})();
-}
-
-function algorithm(pairname) {
-	// showValueOf(pairname);
-
-	if(!global.send_orders)	return;
-
-	var pair = global.pairs[pairname];
-	var nb_orders = Object.keys(pair.orders).length;
-	if(pair.order_in_progress)	console.log("ORDER IN PROGRESS FOR PAIR "+pairname+"...");
-	if(nb_orders == 0) {
-		if(!pair.order_in_progress) {
-			// console.log("NO ORDER FOR PAIR "+pp);
-			// sendSellOrder(vof, vin);
-
-			if(pair.last_order_type == "sell")		sendBuyOrder(pairname);
-			else if(pair.last_order_type == "buy")	sendSellOrder(pairname);
-		}
-	} else {
-		// console.log("PAIR "+pp+" HAS "+nb_orders+" ORDER");
-	}
-}
+// 			// if(pair.last_order_type == "sell")		sendBuyOrder(pairname);
+// 			// else if(pair.last_order_type == "buy")	sendSellOrder(pairname);
+// 		}
+// 	} else {
+// 		// console.log("PAIR "+pp+" HAS "+nb_orders+" ORDER");
+// 	}
+// }
 
 function archive() {
 
@@ -408,8 +232,7 @@ function archive() {
 function dumpMemory(filename) {
 	var fs = require('fs');
 	var file = __dirname+"/"+(filename || Date.now()+"-dump.json");
-
-	fs.writeFileSync(file, JSON.stringify({pairs: global.pairs, history: global.history}));
+	fs.writeFileSync(file, JSON.stringify({pairs: global.pairs, history: global.history}));	
 }
 
 function readMemoryBackup(filename) {
@@ -435,6 +258,53 @@ function readMemoryBackup(filename) {
 	} catch(error) {}
 }
 
+function createAccount(email, password) {
+	console.log(email, password);
+
+	var hmac = generateHmac(email+password);
+	var apikey = generateHmac(email+"_"+Date.now());
+
+	// console.log(hmac, apikey);
+
+	if(global.users.accounts[hmac] != undefined)	return undefined;
+
+	global.users.accounts[hmac] = {
+		notifications: false,
+		email: email,
+		apikey: apikey,
+		created_at: Date.now()
+	};
+
+	global.users.apikeys[apikey] = hmac;
+
+	saveAccounts();
+
+	return apikey;
+}
+
+function saveAccounts(filename) {
+	var fs = require('fs');
+	var file = __dirname+"/"+(filename || "accounts.json");
+	fs.writeFileSync(file, JSON.stringify(global.users));	
+}
+
+function readAccounts(filename) {
+	try {
+		var fs = require('fs');
+		var file = __dirname+"/"+(filename || "accounts.json");
+		var data = fs.readFileSync(file, "utf-8");
+
+		var json = JSON.parse(data);
+		global.users = json;
+
+	} catch(error) {
+		// global.accounts = {};
+		console.log("Error loading user accounts !")
+	}
+
+	console.log(Object.keys(global.users.apikeys).length+" accounts loaded");
+}
+
 function clearMemory() {
 	global.history = (global.history.length > 0 ? [global.history[global.history.length-1]] : []);
 }
@@ -450,8 +320,8 @@ function autoClear() {
 	}
 }
 
-function generateHTML(pairs) {
-	var html = fs.readFileSync(__dirname+"/chart.html", {encoding: "utf-8"});
+function generateChartHTML(pairs) {
+	var html = fs.readFileSync(__dirname+"/html/chart.html", {encoding: "utf-8"});
 	var data = {};
 	for(var i in global.history) {
 		var h = JSON.parse(JSON.stringify(global.history[i]));
@@ -466,6 +336,21 @@ function generateHTML(pairs) {
 	// console.log(data);
 
 	html = html.replace(/%data%/g, JSON.stringify(data));
+	return html;
+}
+
+function generateAccountHTML(account) {
+	var html = fs.readFileSync(__dirname+"/html/account.html", {encoding: "utf-8"});
+	html = html.replace(/%data%/g, JSON.stringify(account));
+
+	html = html.replace(/%display_form%/g, (account.apikey == "bb9ee66fd5d967acd7148d34516fe829ad463ab01b18aeb03fa0e3b2024c0f6f" ? "block" : "none"));
+
+	return html;
+}
+
+function generateDashboardHTML() {
+	var html = fs.readFileSync(__dirname+"/html/dashboard.html", {encoding: "utf-8"});
+	html = html.replace(/%data%/g, JSON.stringify(global.pairs));
 	return html;
 }
 
@@ -523,6 +408,12 @@ function printMenu() {
 	console.log("Type value then press enter");
 }
 
+function generateHmac(string) {
+	const hmac = crypto.createHmac('sha256', "bcrypt0");
+	hmac.update(string);
+	return hmac.digest('hex');
+}
+
 //===============================================================
 // INIT
 //===============================================================
@@ -531,6 +422,7 @@ process.stdin.resume();//so the program will not close instantly
 function exitHandler() {
     console.log("Exiting... Saving data first !");
     dumpMemory("memdata.json");
+    saveAccounts();
     process.exit();
 }
 
@@ -559,6 +451,7 @@ stdin.on('data', function(chunk) {
 });
 
 readMemoryBackup();
+readAccounts();
 
 // getOpenOrders();
 // getClosedOrders();
@@ -570,7 +463,7 @@ setInterval(archive, 10000);
 for(var i in global.pairs) {
 	updateTickerValue(i);
 	setInterval(updateTickerValue, global.interval, i);
-	setInterval(algorithm, 20000, i);
+	// setInterval(algorithm, 20000, i);
 }
 
 setInterval(autoClear, 60000)
@@ -580,13 +473,34 @@ printMenu();
 // EXPRESS SERVER
 //===============================================================
 var app = express();
+app.use(bodyParser.urlencoded({ extended: false }));
+app.use(bodyParser.json())
 
 var auth = function (req, res, next) {
 	function unauthorized(res) {
 		// res.set('WWW-Authenticate', 'Basic realm=Authorization Required');
-		return res.status(401).send(fs.readFileSync("login.html", "utf-8"));
+		return res.status(401).send(fs.readFileSync(__dirname+"/html/login.html", "utf-8"));
 	};
 
+	if(req.headers.cookie == undefined)	return unauthorized(res);
+
+	var valid = false;
+
+	var cook = req.headers.cookie.replace(/ /g, "");
+	var cookies = cook.split(';');
+	for(var i in cookies) {
+		if(cookies[i].startsWith("apikey=")) {
+			var s = cookies[i].substr(7);
+			// console.log(s);
+			if(global.users.apikeys[s] != undefined) {
+				req.user = global.users.accounts[global.users.apikeys[s]];
+				valid = true;
+				break;
+			}
+		}
+	}
+
+	if(!valid)	return unauthorized(res);
 	next();
 };
 
@@ -596,7 +510,39 @@ app.get("/charts/:pairs", auth, function(req, res) {
 		if(pairs.indexOf(".") > 0)	pairs = pairs.split(".");
 		else						pairs = [pairs];
 
-		res.status(200).send(generateHTML(pairs));
+		res.status(200).send(generateChartHTML(pairs));
+	} catch(err) {
+		console.log(err)
+	}
+});
+
+app.get("/", auth, function(req, res) {
+	res.status(200).send(generateDashboardHTML());
+});
+
+app.get("/account", auth, function(req, res) {
+	res.status(200).send(generateAccountHTML(req.user));
+});
+
+app.post("/account", auth, function(req, res) {
+	if(req.body.notifications)	req.user.notifications = (req.body.notifications == 'true' ? true : false);
+	// if(req.body.notifications)	req.user.notifications = (req.body.notifications == 'true' ? true : false);
+
+	res.status(200).send();
+	saveAccounts();
+});
+
+app.post("/account/new", auth, function(req, res) {
+	createAccount(req.body.email, req.body.password);
+	res.status(200).send();
+});
+
+app.post("/login", function(req, res) {
+	try {
+		var hmac = generateHmac(req.body.email+req.body.password);
+
+		if(global.users.accounts[hmac] != null)	res.status(200).send(global.users.accounts[hmac].apikey);
+		else							res.status(401).send("Unknown email/password");
 	} catch(err) {
 		console.log(err)
 	}

@@ -1,0 +1,48 @@
+<html>
+
+<head>
+	<script
+	  src="https://code.jquery.com/jquery-3.2.1.min.js"
+	  integrity="sha256-hwg4gsxgFZhOsEEamdOYGBf13FyQuiTwlAQgxVSNgt4="
+	  crossorigin="anonymous"></script>
+</head>
+
+<body>
+
+	<div id="dashboard">Welcome !
+		<div id="pairs"></div>
+	</div>
+	<script>
+
+	var data = %data%;
+
+	window.chartColors = {
+		red: 'rgb(255, 99, 132)',
+		orange: 'rgb(255, 159, 64)',
+		yellow: 'rgb(255, 205, 86)',
+		green: 'rgb(75, 192, 192)',
+		blue: 'rgb(54, 162, 235)',
+		purple: 'rgb(153, 102, 255)',
+		grey: 'rgb(201, 203, 207)'
+	};
+
+	// charts.innerHTML+='<canvas id="c'+index+'" width="400" height="200"></canvas>';
+	var html = "";
+	for(var pair in data) {
+		html += "<div>"+pair;
+
+			for(var broker in data[pair].values) {
+				var bb = "<div>"+broker+": "+data[pair].values[broker].value+"</div>";
+				html += bb;
+			}
+
+		html += "</div>"
+	}
+
+	$("#pairs")[0].innerHTML = html;
+
+	</script>
+
+</body>
+
+</html>

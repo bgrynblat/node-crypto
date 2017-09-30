@@ -218,6 +218,191 @@ class KrakenClient {
 
 		return response;
 	}
+
+	// sendBuyOrder(pairname) {
+	// 	var vof = pairname.substr(0,3);
+	// 	var vin = pairname.substr(pairname.length-3);
+
+	// 	var pair = global.pairs[pairname];
+
+	// 	var volume = pair.default_buy_price/pair.current_value;
+	// 	volume = volume.toFixed(3);
+
+	// 	pair.order_in_progress = true;
+
+	// 	(async() => {
+
+	// 		var price = pair.current_value*1;
+	// 		price = price.toFixed(2);
+
+	// 		try {
+	// 			var ref = Date.now()+"";
+	// 			ref = parseInt("1"+ref.substr(ref.length-7));
+
+	// 			console.log(Date()+" - +++ BUY ORDER "+volume+" "+vof+" FOR "+pair.current_value*volume+" "+vin+" (AT:"+pair.current_value+" "+vin+" - REF: "+ref+")");
+	// 			var params = {
+	// 				pair: pairname,
+	// 				type: "buy",
+	// 				ordertype: "limit",
+	// 				volume: volume,
+	// 				price: price,
+	// 				userref: ref
+	// 			};
+
+	// 			var res = await kraken.api('AddOrder', params);
+
+	// 			if(res.error[0] != null)	console.err("THERE", res.error);
+	// 			else {
+	// 				console.log("BUY ORDER SUCCESSFULLY SENT : ",res.result["descr"])
+	// 				pair.order_in_progress = false;
+	// 				pair.last_order_value = price;
+	// 				pair.code = 1;
+	// 			}
+	// 		} catch(error) {
+	// 			var msg = "ERROR SENDING ORDER : "+error.code;
+	// 			pair.order_in_progress = false;
+
+	// 			if(error.code == "ETIMEDOUT") {
+	// 				// msg += " - RETRYING...";
+	// 				// sendBuyOrder(vof, vin, volume);
+	// 			} else msg = "ERROR SENDING ORDER REF: "+ref+" - "+error;
+
+	// 			// console.log(msg);
+	// 		}
+	// 	})();
+	// }
+
+	// sendSellOrder(pairname, volume) {
+	// 	var vof = pairname.substr(0,3);
+	// 	var vin = pairname.substr(pairname.length-3);
+
+	// 	var pair = global.pairs[pairname];
+	// 	volume = volume || pair.last_order_volume;
+		
+	// 	var price = pair.last_order_value*(1+(pair.threshold/100));
+	// 	price = price.toFixed(1);
+
+	// 	if(price < pair.current_value)	price = pair.current_value;
+
+	// 	pair.order_in_progress = true;
+
+	// 	(async() => {
+
+	// 		try {
+	// 			var ref = Date.now()+"";
+	// 			ref = parseInt("2"+ref.substr(ref.length-7));
+
+	// 			console.log(Date()+" - --- SELL ORDER "+volume+" "+vof+" FOR "+price*volume+" "+vin+" (AT:"+price+" "+vin+" - REF: "+ref+")");
+	// 			var params = {
+	// 				pair: pairname,
+	// 				type: "sell",
+	// 				ordertype: "limit",
+	// 				volume: volume,
+	// 				price: price,
+	// 				userref: ref
+	// 			};
+
+	// 			var res = await kraken.api('AddOrder', params);
+				
+	// 			// console.log("HERE", res);
+
+	// 			if(res.error[0] != null)	console.err("THERE", res.error);
+	// 			else {
+	// 				console.log("SELL ORDER SUCCESSFULLY SENT : ",res.result["descr"])
+	// 				pair.order_in_progress = false;
+	// 				pair.code = 0;
+	// 			}
+	// 		} catch(error) {
+	// 			// console.log("ERROR SENDING ORDER REF: "+ref, error);
+	// 			pair.order_in_progress = false;
+	// 		}
+	// 	})();
+	// }
+
+	// async getOpenOrders(verbose) {
+	// 	try {
+	// 		var res = await kraken.api('OpenOrders', { trades : true });
+
+	// 	    if(res.error[0] != null)        console.err(res.error);
+	// 	    else {
+	// 	    	var nb = Object.keys(res.result["open"]).length;
+
+	// 	    	for(var i = 0; i<nb; i++) {
+	// 	    		var key = Object.keys(res.result["open"])[i];
+	// 	    		var order = res.result["open"][key];
+
+	// 	    		if(verbose)	console.log(key+" (REF:"+order["userref"]+" STATUS:"+order["status"]+"): "+order["descr"]["order"]);
+	// 	    		// console.log(order["descr"]["pair"]);
+
+	// 	    		for(var j in global.pairs) {
+	// 	    			var oo = global.pairs[j];
+	// 	    			if(oo.kraken_pair == order["descr"]["pair"]) {
+
+	// 	    				if(oo.orders[key] == undefined)
+	// 	    					console.log("NEW ORDER FOR PAIR "+order["descr"]["pair"]+" : "+key);
+
+	// 	    				oo.orders[key] = order;
+	// 	    				oo.last_order_value = order["descr"]["price"];
+	// 	    			}
+	// 	       		}
+
+	// 	    		// console.log("ORDER : "+key+" => ",);
+	// 	    	}
+	// 		}
+	// 	} catch(error) {
+	// 		// console.log("ERROR", error);
+	// 	}
+	// }
+
+	// async getClosedOrders(verbose) {
+	// 	try {
+	// 		var res = await kraken.api('ClosedOrders', { trades : true });
+	// 	    if(res.error[0] != null)        console.err(res.error);
+	// 	    else {
+	// 	    	var nb = Object.keys(res.result["closed"]).length;
+	// 	    	for(var i = nb-1; i>=0; i--) {
+	// 	    		var key = Object.keys(res.result["closed"])[i];
+	// 	    		var order = res.result["closed"][key];
+
+	// 	    		if(verbose)	console.log(key+" (REF:"+order["userref"]+" STATUS:"+order["status"]+"): "+order["descr"]["order"]);
+
+	// 	    		for(var j in global.pairs) {
+	// 	    			var oo = global.pairs[j];
+	// 	    			if(oo.kraken_pair == order["descr"]["pair"]) {
+
+	// 	    				if(order.status == "closed") {
+	// 			    			// console.log("LAST ORDER :", order);
+	// 			    			oo.last_order_value = parseFloat(order.descr.price);
+	// 			    			oo.last_order_volume = parseFloat(order.vol_exec);
+	// 			    			oo.last_order_type = order.descr.type;
+	// 			    		}
+
+	// 	    				if(oo.orders[key] != undefined) {
+	// 	    					console.log("ORDER "+key+" closed");
+	// 	    					delete oo.orders[key];
+	// 	    				}
+	// 	    			}
+	// 	       		}
+
+	// 	    		// console.log("ORDER : "+key+" => ",);
+	// 	    	}
+	// 		}
+	// 	} catch(error) {
+	// 		console.log("ERROR FETCHING CLOSED ORDERS", error.code || error);
+	// 	}
+	// }
+
+	// showValueOf(pairname) {
+	// 	var vals = global.pairs[pairname].value;
+	// 	var thresh = global.pairs[pairname].threshold;
+
+	// 	var vof = pairname.substr(0,3);
+	// 	var vin = pairname.substr(pairname.length-3);
+
+	// 	if(val != null)	{
+	// 		// console.log(Date()+" - 1 "+vof+" = "+val+" "+vin+" ===> +"+thresh+"% / -"+thresh+"% = "+val*(1+(thresh/100))+" / "+val*(1-(thresh/100)));
+	// 	}
+	// }
 }
 
 module.exports = KrakenClient;

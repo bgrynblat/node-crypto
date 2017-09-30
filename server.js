@@ -329,7 +329,9 @@ function generateChartHTML(pairs, min) {
 
 	var max = (minutes*60000)/global.interval;
 
-	for(var i = 0; i < global.history.length && i<=max; i++) {
+	var start = (global.history.length-max < 0 ? 0 : global.history.length-max);
+
+	for(var i = start; i < global.history.length; i++) {
 		var h = JSON.parse(JSON.stringify(global.history[i]));
 
 		for(var j in pairs) {

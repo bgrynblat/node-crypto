@@ -1,8 +1,16 @@
+.body {
+
+}
+
 .pair {
 	margin: 10px 0 0 0;
 	border: 1px dotted #888;
 	padding: 10px;
 	border-radius: 5px;
+}
+
+.pair .name {
+	font-size: large;
 }
 
 .pair .broker div {
@@ -26,4 +34,8 @@
 
 .bitfinex {
 	background-color: #dede22;
+}
+
+.acx {
+	background-color: #ee99ee;
 }

@@ -51,15 +51,15 @@ global.users = {
 // };
 
 global.pairs = {
-	// BTCEUR : {brokers: ["KRAKEN"], threshold: 1, default_buy_price: 6},
-	// ETHEUR : {brokers: ["KRAKEN"], threshold: 1, default_buy_price: 6},
-	// LTCEUR : {brokers: ["KRAKEN"], threshold: 1, default_buy_price: 6},
 	BTCUSD : {brokers: ["KRAKEN", "BITFINEX", "COINBASE", "POLONIEX"], threshold: 20, default_buy_price: 6, last_notification: 0},
-	ETHUSD : {brokers: ["KRAKEN", "BITFINEX"], threshold: 20, default_buy_price: 6, last_notification: 0},
-	LTCUSD : {brokers: ["KRAKEN", "BITFINEX"], threshold: 20, default_buy_price: 6, last_notification: 0},
-	// BTCAUD : {brokers: [], threshold: 1, default_buy_price: 6},
-	ETHBTC : {brokers: ["KRAKEN", "BITFINEX", "COINBASE"], threshold: 0.002, default_buy_price: 6, last_notification: 0},
-	LTCBTC : {brokers: ["KRAKEN", "BITFINEX", "COINBASE"], threshold: 0.002, default_buy_price: 6, last_notification: 0},
+	ETHUSD : {brokers: ["KRAKEN", "BITFINEX", "POLONIEX"], threshold: 20, default_buy_price: 6, last_notification: 0},
+	LTCUSD : {brokers: ["KRAKEN", "BITFINEX", "POLONIEX"], threshold: 20, default_buy_price: 6, last_notification: 0},
+	BTCAUD : {brokers: ["ACX"], threshold: 1, default_buy_price: 6},
+	ETHBTC : {brokers: ["KRAKEN", "BITFINEX", "COINBASE", "POLONIEX"], threshold: 0.002, default_buy_price: 6, last_notification: 0},
+	LTCBTC : {brokers: ["KRAKEN", "BITFINEX", "COINBASE", "POLONIEX"], threshold: 0.002, default_buy_price: 6, last_notification: 0},
+	BTCEUR : {brokers: ["KRAKEN"], threshold: 1, default_buy_price: 6},
+	ETHEUR : {brokers: ["KRAKEN"], threshold: 1, default_buy_price: 6},
+	LTCEUR : {brokers: ["KRAKEN"], threshold: 1, default_buy_price: 6},
 };
 
 global.archiving = true;

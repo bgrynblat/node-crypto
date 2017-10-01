@@ -8,6 +8,7 @@ const KrakenClient = require('./brokers/kraken.js');
 const BitfinexClient = require('./brokers/bitfinex.js');
 const ACXClient = require('./brokers/acx.js');
 const CoinbaseClient = require('./brokers/coinbase.js');
+const PoloniexClient = require('./brokers/poloniex.js');
 
 const key1 = process.env.KRAKEN_KEY;
 const secret1 = process.env.KRAKEN_SECRET;
@@ -18,12 +19,14 @@ const kraken = new KrakenClient(key1, secret1);
 const bitfinex = new BitfinexClient(key1, secret1);
 const acx = new ACXClient(key1, secret1);
 const coinbase = new CoinbaseClient(key1, secret1);
+const poloniex = new PoloniexClient(key1, secret1);
 
 const brokers = {
 	"KRAKEN": kraken,
 	"BITFINEX": bitfinex,
 	"ACX": acx,
-	"COINBASE": coinbase
+	"COINBASE": coinbase,
+	"POLONIEX": poloniex
 }
 
 //==========================================================
@@ -51,7 +54,7 @@ global.pairs = {
 	// BTCEUR : {brokers: ["KRAKEN"], threshold: 1, default_buy_price: 6},
 	// ETHEUR : {brokers: ["KRAKEN"], threshold: 1, default_buy_price: 6},
 	// LTCEUR : {brokers: ["KRAKEN"], threshold: 1, default_buy_price: 6},
-	BTCUSD : {brokers: ["KRAKEN", "BITFINEX", "COINBASE"], threshold: 20, default_buy_price: 6, last_notification: 0},
+	BTCUSD : {brokers: ["KRAKEN", "BITFINEX", "COINBASE", "POLONIEX"], threshold: 20, default_buy_price: 6, last_notification: 0},
 	ETHUSD : {brokers: ["KRAKEN", "BITFINEX"], threshold: 20, default_buy_price: 6, last_notification: 0},
 	LTCUSD : {brokers: ["KRAKEN", "BITFINEX"], threshold: 20, default_buy_price: 6, last_notification: 0},
 	// BTCAUD : {brokers: [], threshold: 1, default_buy_price: 6},
@@ -104,7 +107,7 @@ async function updateTickerValue(pair) {
 			var broker = brokers[brokername];
 			var res = await broker.getTickerValue(pair);
 
-			// if(broker == coinbase)	console.log(brokername, pair, res);
+			// if(broker == poloniex)	console.log(brokername, pair, res);
 
 			if(res == undefined)	break;
 
@@ -337,8 +340,8 @@ function generateChartHTML(pairs, min) {
 		for(var j in pairs) {
 			var pair = pairs[j];
 	
-			if(data[pair] == undefined)		data[pair] = [];
-			if(h.pairs[pair] != undefined)	data[pair].push({time: h.time, values: h.pairs[pair]});
+			if(data[pair] == undefined)		data[pair] = {data: [], brokers: global.pairs[pair].brokers};
+			if(h.pairs[pair] != undefined)	data[pair].data.push({time: h.time, values: h.pairs[pair]});
 		}
 	}
 	// console.log(data);
@@ -511,6 +514,8 @@ var auth = function (req, res, next) {
 	if(!valid)	return unauthorized(res);
 	next();
 };
+
+app.use("/public", express.static('public'));
 
 app.get("/charts/:pairs", auth, function(req, res) {
 	try {

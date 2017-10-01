@@ -1,0 +1,29 @@
+.pair {
+	margin: 10px 0 0 0;
+	border: 1px dotted #888;
+	padding: 10px;
+	border-radius: 5px;
+}
+
+.pair .broker div {
+	display: inline-block;
+	margin-right: 5px;
+	padding: 5px;
+}
+
+.poloniex {
+	background-color: #de3333;
+}
+
+.kraken {
+	background-color: #33de33;
+}
+
+.coinbase {
+	background-color: #3333de;
+	color: white;
+}
+
+.bitfinex {
+	background-color: #dede22;
+}

@@ -26,7 +26,7 @@ const defaults = {
 	timeout : 5000,
 };
 
-const name = "ACS";
+const name = "Coinbase";
 
 // Create a signature for a request
 const getMessageSignature = (path, request, secret, nonce) => {

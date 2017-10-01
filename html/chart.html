@@ -51,23 +51,23 @@
 	var interval = 5000;
 	var datasets = {}, yaxes = {}, times = {}, trends = {};
 
-	for(var index=0; index<Object.keys(data).length; index++) {
+	for(var index=0; index<Object.keys(data).length; index++) {	//LOOP THROUGH PAIRS
 
 		var pair = Object.keys(data)[index];
-		var array = data[pair];
+		var array = data[pair].data;
 
 		datasets[pair] = [];
 		times[pair] = [];
 
 		console.log(pair);
 
-		for(var i in array) {
+		for(var i in array) {	//LOOP THROUGH PAIR DATA HISTORY
 			var hh = array[i];	//hh = { time: 1506606440551, values: {"KRAKEN":{"value":"3545.30000","volume":"9753.93359752","time":"2017-09-28T13:47:15.938Z"}} }
 
 			times[pair].push(new Date(hh.time));
 
-			for(var j=0; j<Object.keys(hh.values).length; j++) {
-				var label = Object.keys(hh.values)[j];
+			for(var j in data[pair].brokers) {
+				var label = data[pair].brokers[j];
 
 				// datasets[pair][j] = {
 				// 	label: label,
@@ -91,7 +91,8 @@
 				}
 
 				// console.log(hh.values[label].value)
-				datasets[pair][j].data.push(hh.values[label].value);
+				if(hh.values[label] != undefined)	datasets[pair][j].data.push(hh.values[label].value);
+				else								datasets[pair][j].data.push(undefined);
 			}
 		}
 

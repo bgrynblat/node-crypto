@@ -5,11 +5,15 @@
 	  src="https://code.jquery.com/jquery-3.2.1.min.js"
 	  integrity="sha256-hwg4gsxgFZhOsEEamdOYGBf13FyQuiTwlAQgxVSNgt4="
 	  crossorigin="anonymous"></script>
+
+	<title>Dashboard</title>
+    <link rel="stylesheet" type="text/css" href="./public/style.css">
+
 </head>
 
 <body>
 
-	<div id="dashboard">Welcome !
+	<div id="dashboard">
 		<div id="pairs"></div>
 	</div>
 	<script>
@@ -29,10 +33,10 @@
 	// charts.innerHTML+='<canvas id="c'+index+'" width="400" height="200"></canvas>';
 	var html = "";
 	for(var pair in data) {
-		html += "<div>"+pair;
+		html += "<div class='pair'><p>"+pair+"</p>";
 
 			for(var broker in data[pair].values) {
-				var bb = "<div>"+broker+": "+data[pair].values[broker].value+"</div>";
+				var bb = "<div class='broker'><div class='"+broker.toLowerCase()+"'>"+broker+"</div><div class='value'>"+data[pair].values[broker].value+"</div></div>";
 				html += bb;
 			}
 

@@ -2,18 +2,12 @@ const got    = require('got');
 const crypto = require('crypto');
 const qs     = require('qs');
 
-// Public/Private method names
-const methods = {
-	public  : [ 'exchange-rates' ],
-	private : [ ],
-};
-
 const pairs = {
-	BTCUSD: "USDT_BTC",
-	LTCUSD: "USDT_LTC",
-	ETHUSD: "USDT_ETH",
 	ETHBTC: "BTC_ETH",
-	LTCBTC: "BTC_LTC"
+	LTCBTC: "BTC_LTC",
+	DASHBTC: "BTC_DASH",
+	XMRBTC: "BTC_XMR",
+	ZECBTC: "BTC_ZEC",
 };
 
 // const currencies = ["BTC", "ETH", "LTC"];
@@ -84,12 +78,18 @@ class Poloniex {
 	getTickerValue(pair) {
 		var promise = (async() => {
 			var time = values.time;
-			var pp = values.rates[pairs[pair]];
+
+			if(values.rates == undefined)	return;
+
+			var pp = values.rates[pairs[pair]] || undefined;
 			
+			// if(pair == "USDTBTC")	console.log(pair, values.rates);
+
+
 			if(pp == undefined)	return;
 
 			var obj = {value: parseFloat(pp.last), volume: parseFloat(pp.baseVolume), time: new Date(time)};
-			// console.log(obj);
+			// console.log(pair, obj);
 			return obj;
 		})();
 		promise.then((result) => {
@@ -101,7 +101,7 @@ class Poloniex {
 		return promise;
 	}
 
-	fetchTickerValue() {
+	fetchTickerValue() {		
 
 		var promise = rawRequest(defaults.url+"/public?command=returnTicker", 'GET', {}, {});
 		// var promise = this.api('exchange-rates', { currency : currency }, callback);

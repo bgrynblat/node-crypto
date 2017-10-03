@@ -9,6 +9,7 @@ const BitfinexClient = require('./brokers/bitfinex.js');
 const ACXClient = require('./brokers/acx.js');
 const CoinbaseClient = require('./brokers/coinbase.js');
 const PoloniexClient = require('./brokers/poloniex.js');
+const BitrexClient = require('./brokers/bitrex.js');
 
 const key1 = process.env.KRAKEN_KEY;
 const secret1 = process.env.KRAKEN_SECRET;
@@ -20,13 +21,15 @@ const bitfinex = new BitfinexClient(key1, secret1);
 const acx = new ACXClient(key1, secret1);
 const coinbase = new CoinbaseClient(key1, secret1);
 const poloniex = new PoloniexClient(key1, secret1);
+const bitrex = new BitrexClient(key1, secret1);
 
 const brokers = {
 	"KRAKEN": kraken,
 	"BITFINEX": bitfinex,
 	"ACX": acx,
 	"COINBASE": coinbase,
-	"POLONIEX": poloniex
+	"POLONIEX": poloniex,
+	"BITREX": bitrex
 }
 
 //==========================================================
@@ -51,15 +54,19 @@ global.users = {
 // };
 
 global.pairs = {
-	BTCUSD : {brokers: ["KRAKEN", "BITFINEX", "COINBASE", "POLONIEX"], threshold: 20, default_buy_price: 6, last_notification: 0},
-	ETHUSD : {brokers: ["KRAKEN", "BITFINEX", "POLONIEX"], threshold: 20, default_buy_price: 6, last_notification: 0},
-	LTCUSD : {brokers: ["KRAKEN", "BITFINEX", "POLONIEX"], threshold: 20, default_buy_price: 6, last_notification: 0},
-	BTCAUD : {brokers: ["ACX"], threshold: 1, default_buy_price: 6},
-	ETHBTC : {brokers: ["KRAKEN", "BITFINEX", "COINBASE", "POLONIEX"], threshold: 0.002, default_buy_price: 6, last_notification: 0},
-	LTCBTC : {brokers: ["KRAKEN", "BITFINEX", "COINBASE", "POLONIEX"], threshold: 0.002, default_buy_price: 6, last_notification: 0},
-	BTCEUR : {brokers: ["KRAKEN"], threshold: 1, default_buy_price: 6},
-	ETHEUR : {brokers: ["KRAKEN"], threshold: 1, default_buy_price: 6},
-	LTCEUR : {brokers: ["KRAKEN"], threshold: 1, default_buy_price: 6},
+	BTCUSD : {brokers: ["KRAKEN", "BITFINEX", "COINBASE"], threshold: 20, default_buy_price: 6, last_notification: 0},
+	ETHUSD : {brokers: ["KRAKEN", "BITFINEX"], threshold: 20, default_buy_price: 6, last_notification: 0},
+	LTCUSD : {brokers: ["KRAKEN", "BITFINEX"], threshold: 20, default_buy_price: 6, last_notification: 0},
+	BTCEUR : {brokers: ["KRAKEN"], threshold: 1, default_buy_price: 6, last_notification: 0},
+	ETHEUR : {brokers: ["KRAKEN"], threshold: 1, default_buy_price: 6, last_notification: 0},
+	LTCEUR : {brokers: ["KRAKEN"], threshold: 1, default_buy_price: 6, last_notification: 0},
+	BTCAUD : {brokers: ["ACX"], threshold: 1, default_buy_price: 6, last_notification: 0},
+	ETHBTC : {brokers: ["KRAKEN", "BITFINEX", "COINBASE", "POLONIEX", "BITREX"], threshold: 0.002, default_buy_price: 6, last_notification: 0},
+	LTCBTC : {brokers: ["KRAKEN", "BITFINEX", "COINBASE", "POLONIEX", "BITREX"], threshold: 0.002, default_buy_price: 6, last_notification: 0},
+	XMRBTC : {brokers: ["POLONIEX", "BITFINEX", "KRAKEN", "BITREX"], threshold: 1, default_buy_price: 6, last_notification: 0},
+	DASHBTC: {brokers: ["POLONIEX", "KRAKEN", "KRAKEN", "BITREX"], threshold: 1, default_buy_price: 6, last_notification: 0},
+	ZECBTC: {brokers: ["POLONIEX", "BITFINEX", "KRAKEN", "BITREX"], threshold: 1, default_buy_price: 6, last_notification: 0},
+	NEOBTC: {brokers: ["BITFINEX", "BITREX"], threshold: 1, default_buy_price: 6, last_notification: 0},
 };
 
 global.archiving = true;
@@ -102,11 +109,11 @@ async function showBalance() {
 async function updateTickerValue(pair) {
 	for(var i in global.pairs[pair].brokers) {
 		try {
-			var brokername = global.pairs[pair].brokers[i];
-			// console.log(pair, brokername);
-			var broker = brokers[brokername];
-			var res = await broker.getTickerValue(pair);
 
+			var brokername = global.pairs[pair].brokers[i];
+			var broker = brokers[brokername];
+
+			var res = await broker.getTickerValue(pair);
 			// if(broker == poloniex)	console.log(brokername, pair, res);
 
 			if(res == undefined)	break;
@@ -125,6 +132,8 @@ async function updateTickerValue(pair) {
 				pp.highest_at = res.time;
 				pp.highest_from = brokername;
 			}
+
+			// if(broker == poloniex)	console.log(pair, pp);
 
 			var low, high;
 			for(var j in pp.values) {
@@ -145,7 +154,7 @@ async function updateTickerValue(pair) {
 				var msg = "DIFF "+pair+" ("+high.from+" > "+low.from+"): "+pp.diff+" "+pair.substr(3);
 				if(pair.last_notification+300000 < Date.now()) {
 					pair.last_notification = Date.now();
-					sendNotification("", msg);
+					// sendNotification("", msg);
 				}
 			}
 

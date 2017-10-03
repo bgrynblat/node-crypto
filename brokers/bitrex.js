@@ -9,14 +9,12 @@ const methods = {
 };
 
 const pairs = {
-	BTCUSD: "BTCUSD",
-	ETHUSD: "ETHUSD",
-	LTCUSD: "LTCUSD",
-	ETHBTC: "ETHBTC",
-	LTCBTC: "LTCBTC",
-	XMRBTC: "XMRBTC",
-	ZECBTC: "ZECBTC",
-	NEOBTC: "NEOBTC",
+	ETHBTC: "BTC-ETH",
+	LTCBTC: "BTC-LTC",
+	XMRBTC: "BTC-XMR",
+	ZECBTC: "BTC-ZEC",
+	NEOBTC: "BTC-NEO",
+	DASHBTC: "BTC-DASH"
 };
 
 const withdraw_fees = {
@@ -27,12 +25,12 @@ const withdraw_fees = {
 
 // Default options
 const defaults = {
-	url     : 'https://api.bitfinex.com',
-	version : 1,
+	url     : 'https://bittrex.com/api',
+	version : 1.1,
 	timeout : 5000,
 };
 
-const name = "BITFINEX";
+const name = "BITREX";
 
 // Create a signature for a request
 const getMessageSignature = (path, request, secret, nonce) => {
@@ -49,7 +47,7 @@ const getMessageSignature = (path, request, secret, nonce) => {
 // Send an API request
 const rawRequest = async (url, method, headers, data, timeout) => {
 	// Set custom User-Agent string
-	headers['User-Agent'] = 'Bitfinex Javascript API Client';
+	headers['User-Agent'] = 'Bitrex Javascript API Client';
 
 	const options = { headers, timeout };
 
@@ -67,7 +65,7 @@ const rawRequest = async (url, method, headers, data, timeout) => {
 			.map((e) => e.substr(1));
 
 		if(!error.length) {
-			throw new Error("Bitfinex API returned an unknown error");
+			throw new Error("Bitrex API returned an unknown error");
 		}
 
 		throw new Error(error.join(', '));
@@ -79,7 +77,7 @@ const rawRequest = async (url, method, headers, data, timeout) => {
 var requests = [];
 var values = {};
 
-class Bitfinex {
+class Bitrex {
 
 	constructor(key, secret, options) {
 		// Allow passing the OTP as the third argument for backwards compatibility
@@ -99,23 +97,22 @@ class Bitfinex {
 			var pair = pairs[i];
 			var exists = false;
 			for(var j in requests) {
-				if(requests[j].method == "pubticker" && requests[j].pair == pair) {
+				if(requests[j].method == "fetch" && requests[j].pair == pair) {
 					exists = true;
 					break;
 				}
 			}
-
-			if(!exists)	requests.push({method: "pubticker", pair: pair});
+			if(!exists)	requests.push({method: "fetch", pair: pair});
 		}
 	}
 
 	getTickerValue(pair) {
 		var promise = (async() => {
 			// console.log(values);
-			return values[pair];
+			return values[pairs[pair]];
 		})();
 		promise.then((result) => {
-				// console.log("RESULT", result);
+				// console.log("RESULT", pair, result);
 				return result;
 			})
 			.catch((error) => {return error});
@@ -125,24 +122,30 @@ class Bitfinex {
 	}
 
 	fetchTickerValue(pair, callback) {
-		var promise = this.api('pubticker', { pair : pair }, callback);
+		var url = defaults.url+"/v"+defaults.version+"/public/getticker?market="+pair;
+
+		var promise = rawRequest(url, 'GET', {}, {}, defaults.timeout);
 		var promise2 = promise
 			.then((result) => {
-				var time = (parseFloat(result.timestamp)*1000);
-				var obj = {value: result.last_price, volume: result.volume, time: new Date(time)};
+				var time = Date.now();
+				// console.log(result);
+				var obj = {value: result.result.Last, volume: 0, time: new Date(time)};
 				values[pair] = obj;
-				// console.log("VALUES", values);
+				// console.log(pair, obj);
 			})
-			.catch((error) => {return error});
+			.catch((error) => {
+				console.log(error);
+				return error;
+			});
 
 		return promise2;
 	}
 
 	processRequest(scope) {
 		if(requests.length > 0) {
-			var req = JSON.parse(JSON.stringify(requests[0]));
+			var req = requests[0];
 			// console.log("Processing request 1 on "+requests.length+" : "+JSON.stringify(req));
-			scope.fetchTickerValue(req.pair);
+			if(req.method == "fetch")	scope.fetchTickerValue(req.pair);
 			requests.splice(0,1);
 		}
 	}
@@ -231,4 +234,4 @@ class Bitfinex {
 	}
 }
 
-module.exports = Bitfinex;
+module.exports = Bitrex;

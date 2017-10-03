@@ -33,7 +33,7 @@
 	// charts.innerHTML+='<canvas id="c'+index+'" width="400" height="200"></canvas>';
 	var html = "";
 	for(var pair in data) {
-		html += "<div class='pair'><div class='name'>"+pair+"</div>";
+		html += "<div class='pair'><a href='/charts/"+pair+"' class='name'>"+pair+"</a>";
 
 			for(var broker in data[pair].values) {
 				var bb = "<div class='broker'><div class='"+broker.toLowerCase()+"'>"+broker+"</div><div class='value'>"+data[pair].values[broker].value+"</div></div>";

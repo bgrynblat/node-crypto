@@ -16,7 +16,10 @@ const pairs = {
 	LTCEUR: "LTCEUR",
 	LTCUSD: "LTCUSD",
 	ETHBTC: "ETHXBT",
-	LTCBTC: "LTCXBT"
+	LTCBTC: "LTCXBT",
+	DASHBTC: "DASHXBT",
+	ZECBTC: "ZECXBT",
+	XMRBTC: "XMRXBT"
 };
 
 const withdraw_fees = {

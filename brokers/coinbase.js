@@ -13,7 +13,7 @@ const pairs = {
 	BTCEUR: "BTCEUR",
 	LTCUSD: "LTCUSD",
 	ETHBTC: "ETHBTC",
-	LTCBTC: "LTCBTC"
+	LTCBTC: "LTCBTC",
 };
 
 const currencies = ["BTC", "ETH", "LTC"];

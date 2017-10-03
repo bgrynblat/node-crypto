@@ -14,7 +14,10 @@ const pairs = {
 	XMRBTC: "BTC-XMR",
 	ZECBTC: "BTC-ZEC",
 	NEOBTC: "BTC-NEO",
-	DASHBTC: "BTC-DASH"
+	DASHBTC: "BTC-DASH",
+	ETCBTC: "BTC-ETC",
+	BCHBTC: "BTC-BCC",
+	OMGBTC: "BTC-OMG",
 };
 
 const withdraw_fees = {

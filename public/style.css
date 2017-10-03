@@ -2,15 +2,30 @@
 
 }
 
-.pair {
+.currency {
 	margin: 10px 0 0 0;
-	border: 1px dotted #888;
-	padding: 10px;
+	border: 1px solid #888;
 	border-radius: 5px;
+}
+
+.currency h1 {
+	font-size: large;
+	border-bottom: 1px solid #888;
+	margin: 0;
+	padding: 5px;
+}
+
+.pair {
+	border-bottom: 1px solid #888;
+}
+
+.broker {
+	display: inline-block;
 }
 
 .pair .name {
 	font-size: large;
+	margin: 0 10px 0 10px;
 }
 
 .pair .broker div {
@@ -21,6 +36,7 @@
 
 .poloniex {
 	background-color: #de3333;
+	color: white;
 }
 
 .kraken {

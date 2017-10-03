@@ -53,9 +53,25 @@ global.users = {
 // 	notifications: true
 // };
 
+global.currencies = {
+	BTC: {name: "Bitcoin"},
+	USD: {name: "US Dollar"},
+	ETH: {name: "Ethereum"},
+	LTC: {name: "Litecoin"},
+	EUR: {name: "Euro"},
+	AUD: {name: "Australian Dollar"},
+	XMR: {name: "Monero"},
+	DASH: {name: "Dash"},
+	ZEC: {name: "ZCash"},
+	NEO: {name: "NEO"},
+	ETC: {name: "Ethereum Classic"},
+	BCH: {name: "Bitcoin Cash"},
+	OMG: {name: "Omisego"},
+}
+
 global.pairs = {
-	BTCUSD : {brokers: ["KRAKEN", "BITFINEX", "COINBASE"], threshold: 20, default_buy_price: 6, last_notification: 0},
-	ETHUSD : {brokers: ["KRAKEN", "BITFINEX"], threshold: 20, default_buy_price: 6, last_notification: 0},
+	BTCUSD : {brokers: ["KRAKEN", "BITFINEX", "COINBASE", "POLONIEX"], threshold: 20, default_buy_price: 6, last_notification: 0},
+	ETHUSD : {brokers: ["KRAKEN", "BITFINEX", "POLONIEX"], threshold: 20, default_buy_price: 6, last_notification: 0},
 	LTCUSD : {brokers: ["KRAKEN", "BITFINEX"], threshold: 20, default_buy_price: 6, last_notification: 0},
 	BTCEUR : {brokers: ["KRAKEN"], threshold: 1, default_buy_price: 6, last_notification: 0},
 	ETHEUR : {brokers: ["KRAKEN"], threshold: 1, default_buy_price: 6, last_notification: 0},
@@ -64,9 +80,14 @@ global.pairs = {
 	ETHBTC : {brokers: ["KRAKEN", "BITFINEX", "COINBASE", "POLONIEX", "BITREX"], threshold: 0.002, default_buy_price: 6, last_notification: 0},
 	LTCBTC : {brokers: ["KRAKEN", "BITFINEX", "COINBASE", "POLONIEX", "BITREX"], threshold: 0.002, default_buy_price: 6, last_notification: 0},
 	XMRBTC : {brokers: ["POLONIEX", "BITFINEX", "KRAKEN", "BITREX"], threshold: 1, default_buy_price: 6, last_notification: 0},
-	DASHBTC: {brokers: ["POLONIEX", "KRAKEN", "KRAKEN", "BITREX"], threshold: 1, default_buy_price: 6, last_notification: 0},
+	DASHBTC: {brokers: ["POLONIEX", "KRAKEN", "BITREX"], threshold: 1, default_buy_price: 6, last_notification: 0},
 	ZECBTC: {brokers: ["POLONIEX", "BITFINEX", "KRAKEN", "BITREX"], threshold: 1, default_buy_price: 6, last_notification: 0},
 	NEOBTC: {brokers: ["BITFINEX", "BITREX"], threshold: 1, default_buy_price: 6, last_notification: 0},
+
+	ETCBTC: {brokers: ["BITFINEX", "BITREX", "POLONIEX"], threshold: 1, default_buy_price: 6, last_notification: 0},
+	BCHBTC: {brokers: ["BITFINEX", "BITREX", "POLONIEX"], threshold: 1, default_buy_price: 6, last_notification: 0},
+	OMGBTC: {brokers: ["BITFINEX", "BITREX", "POLONIEX"], threshold: 1, default_buy_price: 6, last_notification: 0},
+
 };
 
 global.archiving = true;
@@ -371,6 +392,7 @@ function generateAccountHTML(account) {
 function generateDashboardHTML() {
 	var html = fs.readFileSync(__dirname+"/html/dashboard.html", {encoding: "utf-8"});
 	html = html.replace(/%data%/g, JSON.stringify(global.pairs));
+	html = html.replace(/%currencies%/g, JSON.stringify(global.currencies));
 	return html;
 }
 
@@ -568,6 +590,10 @@ app.post("/login", function(req, res) {
 	} catch(err) {
 		console.log(err)
 	}
+});
+
+app.get("/api/pairs", auth, function(req, res) {
+	res.status(200).send(global.pairs);
 });
 
 

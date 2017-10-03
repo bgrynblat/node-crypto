@@ -17,6 +17,9 @@ const pairs = {
 	XMRBTC: "XMRBTC",
 	ZECBTC: "ZECBTC",
 	NEOBTC: "NEOBTC",
+	ETCBTC: "ETCBTC",
+	BCHBTC: "BCHBTC",
+	OMGBTC: "OMGBTC"
 };
 
 const withdraw_fees = {
@@ -91,7 +94,7 @@ class Bitfinex {
 
 		this.updateTickers();
 		setInterval(this.updateTickers, 5000);
-		setInterval(this.processRequest, 1000, this);
+		setInterval(this.processRequest, 2000, this);
 	}
 
 	updateTickers() {

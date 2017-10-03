@@ -8,6 +8,9 @@ const pairs = {
 	DASHBTC: "BTC_DASH",
 	XMRBTC: "BTC_XMR",
 	ZECBTC: "BTC_ZEC",
+	ETCBTC: "BTC_ETC",
+	BCHBTC: "BTC_BCH",
+	OMGBTC: "BTC_OMG",
 };
 
 // const currencies = ["BTC", "ETH", "LTC"];

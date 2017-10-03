@@ -18,6 +18,7 @@
 	</div>
 	<script>
 
+	var currencies = %currencies%;
 	var data = %data%;
 
 	window.chartColors = {
@@ -30,20 +31,92 @@
 		grey: 'rgb(201, 203, 207)'
 	};
 
-	// charts.innerHTML+='<canvas id="c'+index+'" width="400" height="200"></canvas>';
-	var html = "";
-	for(var pair in data) {
-		html += "<div class='pair'><a href='/charts/"+pair+"' class='name'>"+pair+"</a>";
+	updateHTML2();
+	setInterval(updateData, 10000);
+	setInterval(updateTimes, 1000);
 
-			for(var broker in data[pair].values) {
-				var bb = "<div class='broker'><div class='"+broker.toLowerCase()+"'>"+broker+"</div><div class='value'>"+data[pair].values[broker].value+"</div></div>";
-				html += bb;
-			}
-
-		html += "</div>"
+	function updateData() {
+		$.get("/api/pairs", function(ret) {
+				// console.log(ret);
+				data = ret;
+				updateHTML2();
+			}).fail(function(error) {
+				console.log("ERROR", error);
+			});
 	}
 
-	$("#pairs")[0].innerHTML = html;
+	function updateHTML() {
+		// charts.innerHTML+='<canvas id="c'+index+'" width="400" height="200"></canvas>';
+		var html = "";
+		for(var pair in data) {
+			html += "<div class='pair'><a href='/charts/"+pair+"' class='name'>"+pair+"</a>";
+
+				for(var broker in data[pair].values) {
+					var bb = "<div class='broker'><div class='"+broker.toLowerCase()+"'>"+broker+"</div>";
+					bb += "<div class='value'>"+data[pair].values[broker].value+"</div>";
+					bb += "<div class='time'>"+((Date.now()-(new Date(data[pair].values[broker].time).getTime()))/1000).toFixed(0)+"s ago</div>";
+					bb += "</div>";
+					html += bb;
+				}
+
+			html += "</div>"
+		}
+
+		$("#pairs")[0].innerHTML = html;
+	}
+
+	function updateHTML2() {
+		$("#pairs")[0].innerHTML = "";
+		for(var cur in currencies) {
+			var html = "";
+			html += "<div class='currency' id='"+cur+"'><h1>"+currencies[cur].name+" ("+cur+")</h1>";
+
+			for(var pair in data) {
+				if(pair.endsWith(cur)) {
+
+					var ca = pair.replace(cur, '');
+					var cc = currencies[ca].name;
+
+					html += "<div class='pair'><a href='/charts/"+pair+"' class='name'>"+cc+" ("+ca+")</a>";
+
+						for(var broker in data[pair].values) {
+							var bb = "<div class='broker'><div class='"+broker.toLowerCase()+"'>"+broker;
+
+							var val = (data[pair].values[broker].value == undefined ? "?" : parseFloat(data[pair].values[broker].value+"").toFixed(4));
+
+							bb += "<div class='value'>"+val+"</div>";
+
+							var t = (((Date.now()-(new Date(data[pair].values[broker].time).getTime()))/1000).toFixed(0));
+							t = (t == "NaN" ? "" : t+"s ago");
+
+							bb += "<div id='"+broker+"_"+pair+"_time' class='time'>"+t+"</div></div>";
+							bb += "</div>";
+							html += bb;
+						}
+
+					html += "</div>";
+				}
+			}
+
+			html += "</div>";
+
+			$("#pairs")[0].innerHTML += html;
+
+			// console.log(cur, $("#"+cur).children().length);
+			if($("#"+cur+" .pair").children().length == 0)	$("#"+cur).css("display", "none");
+		}
+	}
+
+	function updateTimes() {
+		for(var pair in data) {
+			for(var broker in data[pair].values) {
+				var t = (((Date.now()-(new Date(data[pair].values[broker].time).getTime()))/1000).toFixed(0));
+				t = (t == "NaN" ? "" : t+"s ago");
+
+				$("#"+broker+"_"+pair+"_time")[0].innerHTML = t;
+			}
+		}
+	}
 
 	</script>
 

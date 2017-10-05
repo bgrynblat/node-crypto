@@ -34,16 +34,7 @@ const brokers = {
 }
 
 //==========================================================
-// INIT
-//==========================================================
-
-if(key1 == undefined || secret1 == undefined) {
-	console.log("No KRAKEN keys, exiting.");
-	process.exit();
-}
-
-//==========================================================
-// FETCH FROM BROKERS
+// VARIABLES
 //==========================================================
 
 global.users = {
@@ -132,8 +123,34 @@ for(var i in global.pairs) {
 }
 
 global.interval = 5000;
-
 global.prefix = "#?#";
+
+//==========================================================
+// ENCRYPTION
+//==========================================================
+
+
+function generateHmac(string) {
+	const hmac = crypto.createHmac('sha256', "bcrypt0");
+	hmac.update(string);
+	return hmac.digest('hex');
+}
+
+function encrypt(text, password) {
+	var algorithm = 'aes-256-ctr';
+	var cipher = crypto.createCipher(algorithm,password)
+	var crypted = cipher.update(text,'utf8','hex')
+	crypted += cipher.final('hex');
+	return crypted;
+}
+
+function decrypt(text, password){
+	var algorithm = 'aes-256-ctr';
+	var decipher = crypto.createDecipher(algorithm,password)
+	var dec = decipher.update(text,'hex','utf8')
+	dec += decipher.final('utf8');
+	return dec;
+}
 
 function encryptKey(key, apikey, broker) {
 
@@ -176,6 +193,10 @@ function decryptKey(key, apikey, broker) {
 		return undefined;
 	}
 }
+
+//==========================================================
+// FUNCTIONS
+//==========================================================
 
 async function updateTickerValue(pair) {
 	for(var i in global.pairs[pair].brokers) {
@@ -510,39 +531,31 @@ function printMenu() {
 	console.log("Type value then press enter");
 }
 
-function generateHmac(string) {
-	const hmac = crypto.createHmac('sha256', "bcrypt0");
-	hmac.update(string);
-	return hmac.digest('hex');
-}
-
-function encrypt(text, password) {
-	var algorithm = 'aes-256-ctr';
-	var cipher = crypto.createCipher(algorithm,password)
-	var crypted = cipher.update(text,'utf8','hex')
-	crypted += cipher.final('hex');
-	return crypted;
-}
-
-function decrypt(text, password){
-	var algorithm = 'aes-256-ctr';
-	var decipher = crypto.createDecipher(algorithm,password)
-	var dec = decipher.update(text,'hex','utf8')
-	dec += decipher.final('utf8');
-	return dec;
-}
-
-//===============================================================
-// INIT
-//===============================================================
-process.stdin.resume();//so the program will not close instantly
-
 function exitHandler() {
     console.log("Exiting... Saving data first !");
     dumpMemory("memdata.json");
     saveAccounts();
     process.exit();
 }
+
+function awaitResult(req, res, now) {
+	if(global.tmp[now] == undefined) return;
+
+	if(global.tmp[now].received == Object.keys(req.user.brokers).length) {
+		res.status(200).send(global.tmp[now].result);
+		delete global.tmp[now];
+	} else if(Date.now() > global.tmp[now].expires) {
+		res.status(500).send("TIMEOUT ERROR");
+		delete global.tmp[now];
+	} else {
+		setInterval(awaitResult, 1000, req, res, now);
+	}
+}
+
+//===============================================================
+// INIT
+//===============================================================
+process.stdin.resume();//so the program will not close instantly
 
 // process.on('exit', exitHandler);	//do something when app is closing
 process.on('SIGINT', exitHandler);	//catches ctrl+c event
@@ -621,20 +634,6 @@ var auth = function (req, res, next) {
 	if(!valid)	return unauthorized(res);
 	next();
 };
-
-function awaitResult(req, res, now) {
-	if(global.tmp[now] == undefined) return;
-
-	if(global.tmp[now].received == Object.keys(req.user.brokers).length) {
-		res.status(200).send(global.tmp[now].result);
-		delete global.tmp[now];
-	} else if(Date.now() > global.tmp[now].expires) {
-		res.status(500).send("TIMEOUT ERROR");
-		delete global.tmp[now];
-	} else {
-		setInterval(awaitResult, 1000, req, res, now);
-	}
-}
 
 app.use("/public", express.static('public'));
 

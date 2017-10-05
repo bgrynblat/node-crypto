@@ -34,6 +34,63 @@
 	padding: 5px;
 }
 
+.currency img {
+	height: 20px;
+	margin-left: 10px;
+}
+
+.currency p {
+	display: inline-block;
+	margin-left: 10px;
+}
+
+.currency p.broker {
+	float: right;
+	margin-right: 10px;
+}
+
+/*ACCOUNT PAGE*/
+
+.account form {
+	margin: 10px 0 0 0;
+	border: 1px solid #888;
+	border-radius: 5px;
+	padding: 10px;
+}
+
+.account form input[type=submit] {
+	padding: 10px;
+	border: none;
+	margin: 10px 0 0 0;
+	cursor: pointer;
+	font-size: 20px;
+	display: block;
+}
+
+.account form #brokers div {
+	margin: 5px;
+	padding: 10px;
+	display: inline-block;
+}
+
+.account form #brokers div img{
+    height: 14px;
+    margin-left: 10px;
+    cursor: pointer;
+}
+
+.account input[type=button] {
+	padding: 10px;
+	border: none;
+	margin: 10px 0 0 0;
+	background-color: red;
+	color: white;
+	cursor: pointer;
+	font-size: 20px;
+}
+
+/*BROKERS CSS*/
+
 .poloniex {
 	background-color: #de3333;
 	color: white;

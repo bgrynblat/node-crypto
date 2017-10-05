@@ -69,15 +69,16 @@
 		$("#pairs")[0].innerHTML = "";
 		for(var cur in currencies) {
 			var html = "";
-			html += "<div class='currency' id='"+cur+"'><h1>"+currencies[cur].name+" ("+cur+")</h1>";
+			html += "<div class='currency' id='"+cur+"'><h1><img src='"+currencies[cur].logo+"' style='height: 20px;'/> "+currencies[cur].name+" ("+cur+")</h1>";
 
 			for(var pair in data) {
 				if(pair.endsWith(cur)) {
 
 					var ca = pair.replace(cur, '');
 					var cc = currencies[ca].name;
+					var logo = currencies[ca].logo;
 
-					html += "<div class='pair'><a href='/charts/"+pair+"' class='name'>"+cc+" ("+ca+")</a>";
+					html += "<div class='pair'><img src='"+logo+"' style='height: 20px;'/><a href='/charts/"+pair+"' class='name'>"+cc+" ("+ca+")</a>";
 
 						for(var broker in data[pair].values) {
 							var bb = "<div class='broker'><div class='"+broker.toLowerCase()+"'>"+broker;

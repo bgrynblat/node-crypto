@@ -1,5 +1,6 @@
 const fs = require('fs');
 const express = require('express');
+const https = require('https');
 const bodyParser = require('body-parser');
 const crypto = require('crypto');
 const stdin = process.openStdin();
@@ -9,7 +10,7 @@ const BitfinexClient = require('./brokers/bitfinex.js');
 const ACXClient = require('./brokers/acx.js');
 const CoinbaseClient = require('./brokers/coinbase.js');
 const PoloniexClient = require('./brokers/poloniex.js');
-const BitrexClient = require('./brokers/bitrex.js');
+const BittrexClient = require('./brokers/bittrex.js');
 
 const key1 = process.env.KRAKEN_KEY;
 const secret1 = process.env.KRAKEN_SECRET;
@@ -21,7 +22,7 @@ const bitfinex = new BitfinexClient(key1, secret1);
 const acx = new ACXClient(key1, secret1);
 const coinbase = new CoinbaseClient(key1, secret1);
 const poloniex = new PoloniexClient(key1, secret1);
-const bitrex = new BitrexClient(key1, secret1);
+const bittrex = new BittrexClient(key1, secret1);
 
 const brokers = {
 	"KRAKEN": kraken,
@@ -29,7 +30,7 @@ const brokers = {
 	"ACX": acx,
 	"COINBASE": coinbase,
 	"POLONIEX": poloniex,
-	"BITREX": bitrex
+	"BITREX": bittrex
 }
 
 //==========================================================
@@ -54,19 +55,31 @@ global.users = {
 // };
 
 global.currencies = {
-	BTC: {name: "Bitcoin"},
-	USD: {name: "US Dollar"},
-	ETH: {name: "Ethereum"},
-	LTC: {name: "Litecoin"},
-	EUR: {name: "Euro"},
-	AUD: {name: "Australian Dollar"},
-	XMR: {name: "Monero"},
-	DASH: {name: "Dash"},
-	ZEC: {name: "ZCash"},
-	NEO: {name: "NEO"},
-	ETC: {name: "Ethereum Classic"},
-	BCH: {name: "Bitcoin Cash"},
-	OMG: {name: "Omisego"},
+	BTC: {name: "Bitcoin", logo: "http://logok.org/wp-content/uploads/2016/10/Bitcoin-Logo-640x480.png"},
+	USD: {name: "US Dollar", logo: "http://logonoid.com/images/dollar-logo.png"},
+	ETH: {name: "Ethereum", logo: "http://files.coinmarketcap.com.s3-website-us-east-1.amazonaws.com/static/img/coins/200x200/ethereum.png"},
+	LTC: {name: "Litecoin", logo: "https://bittrexblobstorage.blob.core.windows.net/public/6defbc41-582d-47a6-bb2e-d0fa88663524.png"},
+	EUR: {name: "Euro", logo: "https://image.freepik.com/free-icon/euro-symbol_318-33107.jpg"},
+	AUD: {name: "Australian Dollar", logo: "https://png.icons8.com/australian-dollar/win8/1600"},
+	XMR: {name: "Monero", logo: "https://bittrexblobstorage.blob.core.windows.net/public/efcda24e-c6c3-4029-982c-15af2915fb08.png"},
+	DASH: {name: "Dash", logo: "https://bittrexblobstorage.blob.core.windows.net/public/49993d38-d344-4197-b449-c50c3cc13d47.png"},
+	ZEC: {name: "ZCash", logo: "https://bittrexblobstorage.blob.core.windows.net/public/db51f5f5-3728-4e12-b32f-ea3f4825038b.png"},
+	NEO: {name: "NEO", logo: "https://bittrexblobstorage.blob.core.windows.net/public/ed823972-8cfd-4f1f-a91d-f638ba20bf02.png"},
+	ETC: {name: "Ethereum Classic", logo: "https://bittrexblobstorage.blob.core.windows.net/public/efc96992-1993-4a91-84cf-c04fea919788.png"},
+	BCH: {name: "Bitcoin Cash", logo: "https://coincheck.com/images/icons/icon_bch.svg"},
+	OMG: {name: "Omisego", logo: "https://icotracker.net/content/img/project/a4f52757-b0de-41f5-842f-a64168093123.png"},
+	ADX: {name: "AdEx", logo: "https://bittrexblobstorage.blob.core.windows.net/public/75fe532b-ba7f-483a-a377-4c2b56517224.png"},
+	FUN: {name: "FunFair", logo: "https://bittrexblobstorage.blob.core.windows.net/public/15870ba6-ec5a-4261-8ee2-15e005536a71.png"},
+	DGB: {name: "Digibyte", logo: "https://bittrexblobstorage.blob.core.windows.net/public/f71e4e1a-9249-47a0-b4d0-53afa08ccbc3.png"},
+	DOGE: {name: "Dogecoin", logo: "https://bittrexblobstorage.blob.core.windows.net/public/a2b8eaee-2905-4478-a7a0-246f212c64c6.png"},
+	KMD: {name: "Komodo", logo: "https://bittrexblobstorage.blob.core.windows.net/public/ec8df0e5-f320-44c5-abc4-116bacc31336.png"},
+	MCO: {name: "Monaco", logo: "https://bittrexblobstorage.blob.core.windows.net/public/582b0dc7-5c04-4a2a-b450-c8488799cbd6.png"},
+	NXT: {name: "NXT", logo: "https://bittrexblobstorage.blob.core.windows.net/public/443d492d-4f8b-4a2d-a613-1b37e4ab80cd.png"},
+	PAY: {name: "TenX Pay Token", logo: "https://bittrexblobstorage.blob.core.windows.net/public/c39a72fc-848e-4302-80c8-836a35c6ef99.png"},
+	QTUM: {name: "Qtum", logo: "https://bittrexblobstorage.blob.core.windows.net/public/d2722d80-adb4-4a3d-adac-a75e7d2edd51.png"},
+	XEL: {name: "Elastic", logo: "https://bittrexblobstorage.blob.core.windows.net/public/13ffc393-5f0d-491f-9942-cd664c1f0459.png"},
+	XRP: {name: "Ripple", logo: "http://files.coinmarketcap.com.s3-website-us-east-1.amazonaws.com/static/img/coins/200x200/ripple.png"},
+	USDT: {name: "USD Tether", logo: "http://files.coinmarketcap.com.s3-website-us-east-1.amazonaws.com/static/img/coins/200x200/tether.png"},
 }
 
 global.pairs = {
@@ -92,6 +105,7 @@ global.pairs = {
 
 global.archiving = true;
 global.history = [];
+global.tmp = {};
 // global.send_orders = false;
 
 for(var i in global.pairs) {
@@ -119,11 +133,47 @@ for(var i in global.pairs) {
 
 global.interval = 5000;
 
-async function showBalance() {
-	var res = await kraken.api('Balance');
-	if(res.error[0] != null)	console.err(res.error);
-	else {
-		console.log(res.result);
+global.prefix = "#?#";
+
+function encryptKey(key, apikey, broker) {
+
+	// console.log("dec => ", key);
+	var usersecret = global.users.apikeys[apikey];
+	var pass = "_b4th_"+usersecret+"_s4lt_"+broker;
+
+	var enc1 = encrypt(key, pass);
+	// console.log("e1 => ", enc1);
+	var enc2 = encrypt(broker, broker+"_br0k3r");
+	var enc3 = encrypt(enc2+"-#-"+enc1, enc2+"_3ncrypt");
+	// console.log("e2 => ", enc3);
+	
+	return prefix+enc3+prefix;
+}
+
+function decryptKey(key, apikey, broker) {
+
+	try {
+		// console.log("enc => ", key);
+		var usersecret = global.users.apikeys[apikey];
+		var pass = "_b4th_"+usersecret+"_s4lt_"+broker;
+
+		var enc3 = key.substr(global.prefix.length, key.length-(global.prefix.length*2));
+		// console.log("d2 => ", enc3);
+
+		var enc2 = encrypt(broker, broker+"_br0k3r");
+
+		var dec3 = decrypt(enc3, enc2+"_3ncrypt");
+
+		var array = dec3.split("-#-");
+		var enc1 = array[1];
+		// console.log("d1 => ", enc1);
+
+		var dec1 = decrypt(enc1, pass);
+		// console.log("dec => ", dec1);
+		return dec1;
+	} catch(error) {
+		console.log("error", error);
+		return undefined;
 	}
 }
 
@@ -384,8 +434,18 @@ function generateAccountHTML(account) {
 	var html = fs.readFileSync(__dirname+"/html/account.html", {encoding: "utf-8"});
 	html = html.replace(/%data%/g, JSON.stringify(account));
 
+	var obj = [];
+	for(var i in brokers)	obj.push(i);
+	html = html.replace(/%brokers%/g, JSON.stringify(obj));
+
 	html = html.replace(/%display_form%/g, (account.apikey == "bb9ee66fd5d967acd7148d34516fe829ad463ab01b18aeb03fa0e3b2024c0f6f" ? "block" : "none"));
 
+	return html;
+}
+
+function generateBalanceHTML(balance) {
+	var html = fs.readFileSync(__dirname+"/html/balance.html", {encoding: "utf-8"});
+	html = html.replace(/%currencies%/g, JSON.stringify(global.currencies));
 	return html;
 }
 
@@ -454,6 +514,22 @@ function generateHmac(string) {
 	const hmac = crypto.createHmac('sha256', "bcrypt0");
 	hmac.update(string);
 	return hmac.digest('hex');
+}
+
+function encrypt(text, password) {
+	var algorithm = 'aes-256-ctr';
+	var cipher = crypto.createCipher(algorithm,password)
+	var crypted = cipher.update(text,'utf8','hex')
+	crypted += cipher.final('hex');
+	return crypted;
+}
+
+function decrypt(text, password){
+	var algorithm = 'aes-256-ctr';
+	var decipher = crypto.createDecipher(algorithm,password)
+	var dec = decipher.update(text,'hex','utf8')
+	dec += decipher.final('utf8');
+	return dec;
 }
 
 //===============================================================
@@ -546,6 +622,20 @@ var auth = function (req, res, next) {
 	next();
 };
 
+function awaitResult(req, res, now) {
+	if(global.tmp[now] == undefined) return;
+
+	if(global.tmp[now].received == Object.keys(req.user.brokers).length) {
+		res.status(200).send(global.tmp[now].result);
+		delete global.tmp[now];
+	} else if(Date.now() > global.tmp[now].expires) {
+		res.status(500).send("TIMEOUT ERROR");
+		delete global.tmp[now];
+	} else {
+		setInterval(awaitResult, 1000, req, res, now);
+	}
+}
+
 app.use("/public", express.static('public'));
 
 app.get("/charts/:pairs", auth, function(req, res) {
@@ -564,13 +654,66 @@ app.get("/", auth, function(req, res) {
 	res.status(200).send(generateDashboardHTML());
 });
 
+app.get("/balance", auth, function(req, res) {
+	res.status(200).send(generateBalanceHTML());
+});
+
+app.get("/api/balance", auth, function(req, res) {
+	var data = {};
+
+	var now = Date.now()+"";
+	global.tmp[now] = {received: 0, expires: parseInt(now)+10000, result: {}};
+
+	for(var i in req.user.brokers) {
+			(async() => {
+				try {
+					var brokername = i;
+					var userinfo = req.user.brokers[brokername];
+					var broker = brokers[brokername];
+
+					var apikey = decryptKey(userinfo.apikey, req.user.apikey, brokername);
+					var secret = decryptKey(userinfo.secret, req.user.apikey, brokername);
+
+					var v = await broker.getBalance(apikey, secret);
+
+					// console.log(v);
+
+					global.tmp[now].received++;
+					global.tmp[now].result[brokername] = v;
+					// console.log("SUCCESS", global.tmp[now].received);
+				} catch(error) {
+					global.tmp[now].received++;
+					console.log("Error fetching balance for broker "+i+" user: "+req.user.email);
+				}
+			})();
+	}
+	setInterval(awaitResult, 1000, req, res, now);
+});
+
 app.get("/account", auth, function(req, res) {
 	res.status(200).send(generateAccountHTML(req.user));
 });
 
 app.post("/account", auth, function(req, res) {
-	if(req.body.notifications)	req.user.notifications = (req.body.notifications == 'true' ? true : false);
-	// if(req.body.notifications)	req.user.notifications = (req.body.notifications == 'true' ? true : false);
+	req.user.notifications = req.body.notifications;
+
+	for(var broker in req.body.brokers) {
+		var b = req.body.brokers[broker];
+
+		var enc_apikey, enc_secret;
+		if(b.apikey.startsWith(global.prefix) && b.apikey.endsWith(global.prefix)) { //ENCRYPTED
+			enc_apikey = b.apikey;
+			enc_secret = b.secret;
+		} else {
+			enc_apikey = encryptKey(b.apikey, req.user.apikey, broker);
+			enc_secret = encryptKey(b.secret, req.user.apikey, broker);
+			// var dec = decryptKey(enc, req.user.apikey, broker);
+		}
+		b.apikey = enc_apikey;
+		b.secret = enc_secret;
+	}
+
+	req.user.brokers = req.body.brokers;
 
 	res.status(200).send();
 	saveAccounts();
@@ -607,5 +750,32 @@ for(var i=0; i<process.argv.length; i++) {
 	}
 }
 
-var server = app.listen(port);
-console.log('Listening on port '+port+""+(global.verbose ? " VERBOSE" : "")+'...');
+// var server = app.listen(port);
+// console.log('Listening on port '+port+""+(global.verbose ? " VERBOSE" : "")+'...');
+
+//=======================================================
+// HTTPS
+//=======================================================
+
+var options = {
+    key: fs.readFileSync('certificates/privkey.pem'),
+    cert: fs.readFileSync('certificates/fullchain.pem')
+};
+var port_https = (port == 80 ? 443 : port+1);
+var server_https = https.createServer(options, app).listen(port_https, function(){
+	console.log("Express HTTPS server listening on port " + port_https);
+});
+
+var http = express();
+http.get('/', function(req,res) {
+    var redirect = 'https://'+req.get('host')+req.url;
+        // console.log(redirect)
+    res.redirect(redirect);
+});
+
+var server_http = http.listen(port);
+console.log('HTTP:'+port+' HTTPS:'+port_https);
+
+
+// var r = bittrex.getBalance("25a5446226cb4a408af3b17394caca90", "f1372732c3a14c1c8c8fd529c5c11610");
+// console.log(r);

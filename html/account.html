@@ -5,17 +5,29 @@
 	  src="https://code.jquery.com/jquery-3.2.1.min.js"
 	  integrity="sha256-hwg4gsxgFZhOsEEamdOYGBf13FyQuiTwlAQgxVSNgt4="
 	  crossorigin="anonymous"></script>
+
+	<title>Account</title>
+    <link rel="stylesheet" type="text/css" href="./public/style.css">
 </head>
 
-<body>
+<body class="account">
 
 	<form id="account" action="javaScript:update()">
-		<div>My Account</div>
+		<h1>My Account</h1>
 		Email: <input id="email" type="text" name="email" disabled><br>
 		Api Key: <input id="apikey" type="text" name="apikey" disabled><br>
 		Notifications:
 			<input type="radio" id="notif_on" name="notifications" value="true"> Yes
 			<input type="radio" id="notif_off" name="notifications" value="false"> No<br>
+
+		Active brokers:<br />
+		<div id="brokers"></div>
+		Add broker: <select id='brokers'></select>
+		<input type="text" id="bapikey" placeholder="API Key" />
+		<input type="Password" id="bsecret" placeholder="Secret Key" />
+		<img class="addbroker" onclick='addBroker()' src='https://www.shareicon.net/download/2017/02/09/878611_green.svg' style='height: 14px;'/>
+
+
 
 		<input type="submit" value="Update"/>
 	</form>
@@ -24,7 +36,7 @@
 	<img id="loader" src="https://i.pinimg.com/originals/16/4d/3e/164d3e03f742b3b0765e569536844bd1.gif" style="display: none;"/>
 
 	<form id="newuser" style="display: %display_form%" action="javaScript:newuser()">
-		<div>New User</div>
+		<h1>New User</h1>
 		Email: <input id="email" type="email" name="email" required><br>
 		Password: <input id="password" type="password" name="password" required><br>
 
@@ -35,6 +47,7 @@
 
 	<script>
 
+		var brokers = %brokers%;
 		var data = %data%;
 
 		$("#email")[0].value = data.email;
@@ -43,12 +56,33 @@
 		var noton = $("#notif_on")[0];
 		var notoff = $("#notif_off")[0];
 
-		if(data.notifications == true) {
-			noton.checked = true;
-			notoff.checked = false;
-		} else {
-			notoff.checked = true;
-			noton.checked = false;	
+
+		function updateHTML() {
+			if(data.notifications == true) {
+				noton.checked = true;
+				notoff.checked = false;
+			} else {
+				notoff.checked = true;
+				noton.checked = false;	
+			}
+
+			var html = "";
+			for(var broker in data.brokers) {
+				html += "<div class='"+broker.toLowerCase()+"'>"+broker;
+				html += "<img onclick='deleteBroker(\""+broker+"\")' src='http://www.iconninja.com/files/263/356/891/invalid-x-cancel-incorrect-cross-close-delete-icon.svg' />";
+				html += "</div>";
+			}
+			$("div#brokers")[0].innerHTML = html;
+
+			$('select#brokers')[0].innerHTML = "";
+			for(var i in brokers) {
+				if(data.brokers[brokers[i]] == undefined) {
+					$('select#brokers').append($('<option>', {
+					    value: brokers[i],
+					    text: brokers[i]
+					}));
+				}
+			}
 		}
 
 		function update() {
@@ -62,19 +96,32 @@
 
 			var obj = {
 				notifications: ($("#notif_on")[0].checked == true),
+				brokers: data.brokers
 			};
 
-			console.log(obj);
+			// $.post("/account", brokers, function(data) {
+			// 	window.location.reload();
+			// }).fail(function(error) {
+			// 	$("#error")[0].innerHTML = error.responseText;
+			// 	form.style.display = "block";
+			// 	loader.style.display = "none";
+			// 	document.cookie = "";
+			// });
 
-
-			$.post("/account", obj, function(data) {
-				window.location.reload();
-			}).fail(function(error) {
-				$("#error")[0].innerHTML = error.responseText;
-				form.style.display = "block";
-				loader.style.display = "none";
-				document.cookie = "";
-			});
+			$.ajax({
+		        type: "POST",
+		        url: "/account",
+		        data: JSON.stringify(obj),
+		        contentType: "application/json; charset=utf-8",
+		        success: function(data){
+		        	window.location.reload();
+		        },
+		        failure: function(errMsg) {
+		            form.style.display = "block";
+					loader.style.display = "none";
+					document.cookie = "";
+		        }
+		  	});
 		}
 
 		function newuser() {
@@ -96,6 +143,31 @@
 			window.location.reload();
 		}
 
+		function deleteBroker(broker) {
+			delete data.brokers[broker];
+			updateHTML();
+		}
+
+		function addBroker() {
+			var obj = {
+				apikey: $('#bapikey')[0].value,
+				secret: $('#bsecret')[0].value
+			}
+
+			if(obj.apikey == "" || obj.apikey == undefined || obj.secret == "" || obj.secret == undefined)	return;
+
+			var bb = $('select#brokers')[0].value;
+			if(bb == "" || bb == undefined)	return
+
+			data.brokers[bb] = JSON.parse(JSON.stringify(obj));
+
+			$('#bapikey')[0].value = "";
+			$('#bsecret')[0].value = "";
+
+			updateHTML();
+		}
+
+		updateHTML();
 
 	</script>
 

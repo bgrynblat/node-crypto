@@ -2,6 +2,24 @@ const got    = require('got');
 const crypto = require('crypto');
 const qs     = require('qs');
 
+const currencies = {
+	BTC: "BTC",
+	ADX: "ADX",
+	BCH: "BCH",
+	ETH: "ETH",
+	LTC: "LTC",
+	XMR: "XMR",
+	ZEC: "ZEC",
+	DASH: "DASH",
+	ETC: "ETC",
+	OMG: "OMG",
+	FUN: "FUN",
+	ADX: "ADX",
+	DGB: "DGB",
+	DOGE: "DOGE",
+	NXT: "NXT",
+};
+
 const pairs = {
 	ETHBTC: "BTC_ETH",
 	LTCBTC: "BTC_LTC",
@@ -127,6 +145,65 @@ class Poloniex {
 			scope.fetchTickerValue(req.currency);
 			requests.splice(0,1);
 		}
+	}
+
+	getBalance(apikey, secretkey) {
+
+		const url = defaults.url+'/tradingApi'
+		const nonce = Date.now().toString()
+		
+		var parameters = {};
+        parameters.command = 'returnBalances';
+        parameters.nonce = nonce;
+
+        var paramString, signature;
+
+        if (!apikey || !secretkey) {
+            throw 'Poloniex: Error. API key and secret required';
+        }
+
+        // Convert to `arg1=foo&arg2=bar`
+        var paramString = Object.keys(parameters).map(function(param) {
+            return encodeURIComponent(param) + '=' + encodeURIComponent(parameters[param]);
+        }).join('&');
+
+        var signature = crypto.createHmac('sha512', secretkey).update(paramString).digest('hex');
+
+        var headers = {
+            Key: apikey,
+            Sign: signature
+        };
+
+        var options = {
+            method: 'POST',
+            url: url,
+            form: parameters,
+            body: parameters,
+            headers: headers,
+            json: true,
+            // options.headers['User-Agent'] = Poloniex.USER_AGENT;
+        	strictSSL: true
+        };
+
+		var promise = (async() => {
+			try {
+				const result = await got(url, options);
+				var obj = {};
+
+				for(var i in result.body) {
+					var cur = currencies[i];
+					var val = parseFloat(result.body[i]);
+					if(val > 0)	obj[cur] = val;
+				}
+
+				return obj;
+			} catch(error) {
+				console.log(error);
+				return error;
+			}
+		})();
+
+		return promise;
 	}
 }
 

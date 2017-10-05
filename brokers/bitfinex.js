@@ -8,6 +8,22 @@ const methods = {
 	private : [ ],
 };
 
+const currencies = {
+	btc: "BTC",
+	eos: "EOS",
+	bch: "BCH",
+	eth: "ETH",
+	ltc: "LTC",
+	xmr: "XMR",
+	zec: "ZEC",
+	neo: "NEO",
+	dash: "DASH",
+	etc: "ETC",
+	omg: "OMG",
+	usd: "USD",
+	xrp: "XRP"
+}
+
 const pairs = {
 	BTCUSD: "BTCUSD",
 	ETHUSD: "ETHUSD",
@@ -148,6 +164,53 @@ class Bitfinex {
 			scope.fetchTickerValue(req.pair);
 			requests.splice(0,1);
 		}
+	}
+
+	getBalance(apikey, secretkey) {
+
+		const url = "/v"+defaults.version+'/balances'
+		const nonce = Date.now().toString()
+		const body = {request: url, nonce}
+		const payload = new Buffer(JSON.stringify(body)).toString('base64')
+
+		const signature = crypto.createHmac('sha384', secretkey).update(payload) .digest('hex')
+
+		const headers = {
+			'X-BFX-APIKEY': apikey,
+			'X-BFX-PAYLOAD': payload,
+			'X-BFX-SIGNATURE': signature
+		};
+
+		const options = { headers };
+
+		Object.assign(options, {
+			method : 'POST',
+			body   : qs.stringify(body),
+		});
+
+		var promise = (async() => {
+			try {
+				const result = await got(defaults.url+"/"+url, options);
+
+				var json = JSON.parse(result.body);
+				var obj = {};
+				for(var i in json) {
+					var c = json[i];
+					var cur = currencies[c.currency];
+					var val = parseFloat(c.amount);
+
+					if(cur != undefined && val > 0)
+						obj[cur] = val;
+				}
+
+				return obj;
+			} catch(error) {
+				console.log(error);
+				return error;
+			}
+		})();
+
+		return promise;
 	}
 
 	api(method, params, callback) {

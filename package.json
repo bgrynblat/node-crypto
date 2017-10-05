@@ -9,7 +9,8 @@
     "got": "^7.1.0",
     "qs": ">=6.4.0",
     "express": "latest",
-    "body-parser": "latest"
+    "body-parser": "latest",
+    "https": "latest"
   },
   "main": "server.js",
   "engines": {

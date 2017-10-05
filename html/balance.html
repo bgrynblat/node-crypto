@@ -1,0 +1,79 @@
+<html>
+
+<head>
+	<script
+	  src="https://code.jquery.com/jquery-3.2.1.min.js"
+	  integrity="sha256-hwg4gsxgFZhOsEEamdOYGBf13FyQuiTwlAQgxVSNgt4="
+	  crossorigin="anonymous"></script>
+
+	<title>Balance</title>
+    <link rel="stylesheet" type="text/css" href="./public/style.css">
+</head>
+
+<body>
+	<div id="balance">
+	</div>
+
+	<div id="error"></div>
+	<img id="loader" src="https://i.pinimg.com/originals/16/4d/3e/164d3e03f742b3b0765e569536844bd1.gif" style="display: none;"/>
+
+	<script>
+
+		var currencies = %currencies%;
+
+		function update() {
+			$("#error")[0].innerHTML = "";
+
+			var loader = $("#loader")[0];
+			loader.style.display = "block";
+
+			var form = $("#balance")[0];
+			form.style.display = "none";
+
+
+			$.get("/api/balance", function(data) {
+				// console.log(data);
+
+				var obj = {};
+				for(var broker in data) {
+					var bdata = data[broker];
+
+					for(var cur in bdata) {
+						if(obj[cur] == undefined)	obj[cur] = {total: 0, brokers: {}};
+						obj[cur].total += bdata[cur];
+						obj[cur].brokers[broker] = bdata[cur];
+					}
+				}
+
+				var html = "<div>Total Balance</div>";
+				for(var cur in obj) {
+					if(currencies[cur] != undefined) {
+						html += "<div class='currency'><img src='"+currencies[cur].logo+"' />"+currencies[cur].name+" ("+cur+")<p>"+obj[cur].total+"</p>";
+
+						for(var b in obj[cur].brokers) {
+							var pcent = (obj[cur].brokers[b]*100/obj[cur].total).toFixed(1);
+							html += "<p class='broker "+b.toLowerCase()+"'>"+b+" ("+pcent+"%)</p>";
+						}
+
+						html += "</div>";
+					}
+				}
+
+				form.innerHTML = html;
+
+				form.style.display = "block";
+				loader.style.display = "none";
+			}).fail(function(error) {
+				$("#error")[0].innerHTML = error.responseText;
+				form.style.display = "block";
+				loader.style.display = "none";
+			});
+		}
+
+		update();
+
+	</script>
+
+</body>
+
+</html>

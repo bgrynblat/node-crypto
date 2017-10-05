@@ -8,6 +8,31 @@ const methods = {
 	private : [ ],
 };
 
+const currencies = {
+	BTC: "BTC",
+	ADX: "ADX",
+	BCC: "BCH",
+	ETH: "ETH",
+	LTC: "LTC",
+	XMR: "XMR",
+	ZEC: "ZEC",
+	NEO: "NEO",
+	DASH: "DASH",
+	ETC: "ETC",
+	OMG: "OMG",
+	FUN: "FUN",
+	ADX: "ADX",
+	DGB: "DGB",
+	DOGE: "DOGE",
+	KMD: "KMD",
+	MCO: "MCO",
+	NXT: "NXT",
+	PAY: "PAY",
+	QTUM: "QTUM",
+	XEL: "XEL",
+	USDT: "USDT"
+}
+
 const pairs = {
 	ETHBTC: "BTC-ETH",
 	LTCBTC: "BTC-LTC",
@@ -33,7 +58,7 @@ const defaults = {
 	timeout : 5000,
 };
 
-const name = "BITREX";
+const name = "BITTREX";
 
 // Create a signature for a request
 const getMessageSignature = (path, request, secret, nonce) => {
@@ -50,7 +75,7 @@ const getMessageSignature = (path, request, secret, nonce) => {
 // Send an API request
 const rawRequest = async (url, method, headers, data, timeout) => {
 	// Set custom User-Agent string
-	headers['User-Agent'] = 'Bitrex Javascript API Client';
+	headers['User-Agent'] = 'Bittrex Javascript API Client';
 
 	const options = { headers, timeout };
 
@@ -68,7 +93,7 @@ const rawRequest = async (url, method, headers, data, timeout) => {
 			.map((e) => e.substr(1));
 
 		if(!error.length) {
-			throw new Error("Bitrex API returned an unknown error");
+			throw new Error("Bittrex API returned an unknown error");
 		}
 
 		throw new Error(error.join(', '));
@@ -80,7 +105,7 @@ const rawRequest = async (url, method, headers, data, timeout) => {
 var requests = [];
 var values = {};
 
-class Bitrex {
+class Bittrex {
 
 	constructor(key, secret, options) {
 		// Allow passing the OTP as the third argument for backwards compatibility
@@ -151,6 +176,66 @@ class Bitrex {
 			if(req.method == "fetch")	scope.fetchTickerValue(req.pair);
 			requests.splice(0,1);
 		}
+	}
+
+	getBalance(apikey, secretkey) {
+
+		const nonce = Date.now().toString()
+		const url = defaults.url+"/v"+defaults.version+"/account/getbalances?apikey="+apikey+"&nonce="+nonce;
+		
+		var parameters = {};
+        parameters.command = 'returnBalances';
+        parameters.nonce = nonce;
+
+        var paramString, signature;
+
+        if (!apikey || !secretkey) {
+            throw 'Poloniex: Error. API key and secret required';
+        }
+
+        // Convert to `arg1=foo&arg2=bar`
+        var paramString = Object.keys(parameters).map(function(param) {
+            return encodeURIComponent(param) + '=' + encodeURIComponent(parameters[param]);
+        }).join('&');
+
+        var signature = crypto.createHmac('sha512', secretkey).update(url).digest('hex');
+
+        var headers = {
+            apisign: signature
+        };
+
+        var options = {
+            method: 'GET',
+            url: url,
+            headers: headers,
+            json: true,
+            // options.headers['User-Agent'] = Poloniex.USER_AGENT;
+        	strictSSL: true
+        };
+
+		var promise = (async() => {
+			try {
+				const result = await got(url, options);
+				if(!result.body.success)	throw new Error(result.body.message);
+
+				var obj = {};
+				for(var i in result.body.result) {
+					var c = result.body.result[i];
+					if(c.Balance > 0) {
+						var cc = currencies[c.Currency];
+						if(cc != undefined)
+							obj[cc] = c.Balance;
+					}
+				}
+
+				return obj;
+			} catch(error) {
+				console.log(error);
+				return error;
+			}
+		})();
+
+		return promise;
 	}
 
 	api(method, params, callback) {
@@ -237,4 +322,4 @@ class Bitrex {
 	}
 }
 
-module.exports = Bitrex;
+module.exports = Bittrex;

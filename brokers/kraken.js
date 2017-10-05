@@ -8,6 +8,14 @@ const methods = {
 	private : [ 'Balance', 'TradeBalance', 'OpenOrders', 'ClosedOrders', 'QueryOrders', 'TradesHistory', 'QueryTrades', 'OpenPositions', 'Ledgers', 'QueryLedgers', 'TradeVolume', 'AddOrder', 'CancelOrder', 'DepositMethods', 'DepositAddresses', 'DepositStatus', 'WithdrawInfo', 'Withdraw', 'WithdrawStatus', 'WithdrawCancel' ],
 };
 
+const currencies = {
+	ZEUR: "EUR",
+	XXBT: "BTC",
+	XLTC: "LTC",
+	XETH: "ETH",
+	XUSD: "USD"
+};
+
 const pairs = {
 	BTCEUR: "XBTEUR",
 	BTCUSD: "XBTUSD",
@@ -89,17 +97,12 @@ const rawRequest = async (url, headers, data, timeout) => {
  */
 class KrakenClient {
 	constructor(key, secret, options) {
-		// Allow passing the OTP as the third argument for backwards compatibility
-		if(typeof options === 'string') {
-			options = { otp : options };
-		}
-
 		this.config = Object.assign({ key, secret }, defaults, options);
 	}
 
-	getTickerValue(pair, callback) {
+	getTickerValue(pair) {
 
-		var promise = this.api('Ticker', { pair : pairs[pair] }, callback);
+		var promise = this.api('Ticker', { pair : pairs[pair] });
 		var promise2 = promise
 			.then((result) => {
 
@@ -125,7 +128,7 @@ class KrakenClient {
 	 * @param  {Function} callback A callback function to be executed when the request is complete
 	 * @return {Object}            The request object
 	 */
-	api(method, params, callback) {
+	api(method, params, apikey, secretkey, callback) {
 		// Default params to empty object
 		if(typeof params === 'function') {
 			callback = params;
@@ -136,7 +139,7 @@ class KrakenClient {
 			return this.publicMethod(method, params, callback);
 		}
 		else if(methods.private.includes(method)) {
-			return this.privateMethod(method, params, callback);
+			return this.privateMethod(method, params, apikey, secretkey, callback);
 		}
 		else {
 			throw new Error(method + ' is not a valid API method.');
@@ -179,7 +182,13 @@ class KrakenClient {
 	 * @param  {Function} callback A callback function to be executed when the request is complete
 	 * @return {Object}            The request object
 	 */
-	privateMethod(method, params, callback) {
+	privateMethod(method, params, apikey, secretkey, callback) {
+
+		if(apikey == undefined || secretkey == undefined) {
+			console.log("ERROR KRAKEN APIKEY/SECRETKEY is empty");
+			return;
+		}
+
 		params = params || {};
 
 		// Default params to empty object
@@ -202,12 +211,12 @@ class KrakenClient {
 		const signature = getMessageSignature(
 			path,
 			params,
-			this.config.secret,
+			secretkey,
 			params.nonce
 		);
 
 		const headers = {
-			'API-Key'  : this.config.key,
+			'API-Key'  : apikey,
 			'API-Sign' : signature,
 		};
 
@@ -220,6 +229,33 @@ class KrakenClient {
 		}
 
 		return response;
+	}
+
+	getBalance(apikey, secretkey) {
+		var promise = (async() => {
+			try {
+				const result = await this.api('Balance', {}, apikey, secretkey);
+				
+				if(result.error.length > 0)	throw new Error(result.error);
+
+				var obj = {};
+				for(var i in result.result) {
+					var val = parseFloat(result.result[i]);
+					if(val > 0) {
+						var cc = currencies[i];
+						if(cc != undefined)
+							obj[cc] = val;
+					}
+				}
+
+				return obj;
+			} catch(error) {
+				console.log(error);
+				return error;
+			}
+		})();
+
+		return promise;
 	}
 
 	// sendBuyOrder(pairname) {

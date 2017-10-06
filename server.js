@@ -58,7 +58,7 @@ global.currencies = {
 	NEO: {name: "NEO", logo: "https://bittrexblobstorage.blob.core.windows.net/public/ed823972-8cfd-4f1f-a91d-f638ba20bf02.png"},
 	ETC: {name: "Ethereum Classic", logo: "https://bittrexblobstorage.blob.core.windows.net/public/efc96992-1993-4a91-84cf-c04fea919788.png"},
 	BCH: {name: "Bitcoin Cash", logo: "https://coincheck.com/images/icons/icon_bch.svg"},
-	OMG: {name: "Omisego", logo: "https://icotracker.net/content/img/project/a4f52757-b0de-41f5-842f-a64168093123.png"},
+	OMG: {name: "Omisego", logo: "http://neocashradio.com/wp-content/uploads/2017/08/omisego.jpg"},
 	ADX: {name: "AdEx", logo: "https://bittrexblobstorage.blob.core.windows.net/public/75fe532b-ba7f-483a-a377-4c2b56517224.png"},
 	FUN: {name: "FunFair", logo: "https://bittrexblobstorage.blob.core.windows.net/public/15870ba6-ec5a-4261-8ee2-15e005536a71.png"},
 	DGB: {name: "Digibyte", logo: "https://bittrexblobstorage.blob.core.windows.net/public/f71e4e1a-9249-47a0-b4d0-53afa08ccbc3.png"},
@@ -424,6 +424,25 @@ function autoClear() {
 	}
 }
 
+function generateHeader(user) {
+	var html = "<div class='header'>";
+
+	html += "<div class='pages'>";
+	html += "<a href='/' class='page'>Dashboard</a>";
+	html += "<a href='/charts/BTCUSD' class='page'>Charts</a>";
+	html += "<a href='/balance' class='page'>Balance</a>";
+	html += "<a href='/account' class='page'>Account</a>";
+	html += "</div>";
+
+	html += "<div class='logout' onclick='logout()'>Log Out</div>"
+
+	html += "</div>";
+
+	html += "<script>function logout() {document.cookie = 'apikey=;expires=Thu, 01 Jan 1970 00:00:01 GMT;';window.location.reload();}</script>";
+
+	return html;
+}
+
 function generateChartHTML(pairs, min) {
 	var html = fs.readFileSync(__dirname+"/html/chart.html", {encoding: "utf-8"});
 	var data = {};
@@ -441,13 +460,18 @@ function generateChartHTML(pairs, min) {
 		for(var j in pairs) {
 			var pair = pairs[j];
 	
-			if(data[pair] == undefined)		data[pair] = {data: [], brokers: global.pairs[pair].brokers};
-			if(h.pairs[pair] != undefined)	data[pair].data.push({time: h.time, values: h.pairs[pair]});
+			if(global.pairs[pair] != undefined) {
+				if(data[pair] == undefined)		data[pair] = {data: [], brokers: global.pairs[pair].brokers};
+				if(h.pairs[pair] != undefined)	data[pair].data.push({time: h.time, values: h.pairs[pair]});
+			}
 		}
 	}
 	// console.log(data);
 
 	html = html.replace(/%data%/g, JSON.stringify(data));
+	html = html.replace(/%pairs%/g, JSON.stringify(global.pairs));
+	var header = generateHeader();
+	html = html.replace(/%header%/g, header);
 	return html;
 }
 
@@ -459,6 +483,9 @@ function generateAccountHTML(account) {
 	for(var i in brokers)	obj.push(i);
 	html = html.replace(/%brokers%/g, JSON.stringify(obj));
 
+	var header = generateHeader();
+	html = html.replace(/%header%/g, header);
+
 	html = html.replace(/%display_form%/g, (account.apikey == "bb9ee66fd5d967acd7148d34516fe829ad463ab01b18aeb03fa0e3b2024c0f6f" ? "block" : "none"));
 
 	return html;
@@ -467,6 +494,10 @@ function generateAccountHTML(account) {
 function generateBalanceHTML(balance) {
 	var html = fs.readFileSync(__dirname+"/html/balance.html", {encoding: "utf-8"});
 	html = html.replace(/%currencies%/g, JSON.stringify(global.currencies));
+
+	var header = generateHeader();
+	html = html.replace(/%header%/g, header);
+
 	return html;
 }
 
@@ -474,6 +505,10 @@ function generateDashboardHTML() {
 	var html = fs.readFileSync(__dirname+"/html/dashboard.html", {encoding: "utf-8"});
 	html = html.replace(/%data%/g, JSON.stringify(global.pairs));
 	html = html.replace(/%currencies%/g, JSON.stringify(global.currencies));
+
+	var header = generateHeader();
+	html = html.replace(/%header%/g, header);
+
 	return html;
 }
 
@@ -762,7 +797,8 @@ var options = {
     key: fs.readFileSync('certificates/privkey.pem'),
     cert: fs.readFileSync('certificates/fullchain.pem')
 };
-var port_https = (port == 80 ? 443 : port+1);
+
+var port_https = 443;
 var server_https = https.createServer(options, app).listen(port_https, function(){
 	console.log("Express HTTPS server listening on port " + port_https);
 });

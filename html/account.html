@@ -12,38 +12,43 @@
 
 <body class="account">
 
-	<form id="account" action="javaScript:update()">
-		<h1>My Account</h1>
-		Email: <input id="email" type="text" name="email" disabled><br>
-		Api Key: <input id="apikey" type="text" name="apikey" disabled><br>
-		Notifications:
-			<input type="radio" id="notif_on" name="notifications" value="true"> Yes
-			<input type="radio" id="notif_off" name="notifications" value="false"> No<br>
+	%header%
 
-		Active brokers:<br />
-		<div id="brokers"></div>
-		Add broker: <select id='brokers'></select>
-		<input type="text" id="bapikey" placeholder="API Key" />
-		<input type="Password" id="bsecret" placeholder="Secret Key" />
-		<img class="addbroker" onclick='addBroker()' src='https://www.shareicon.net/download/2017/02/09/878611_green.svg' style='height: 14px;'/>
+	<div  class="content">
+		<form id="account" action="javaScript:update()">
+			<h1>My Account</h1>
+			Email: <input id="email" type="text" name="email" disabled><br>
+			Api Key: <input id="apikey" type="text" name="apikey" disabled><br>
+			Notifications:
+				<input type="radio" id="notif_on" name="notifications" value="true"> Yes
+				<input type="radio" id="notif_off" name="notifications" value="false"> No<br>
+
+			Active brokers:<br />
+			<div id="brokers"></div>
+			Add broker: <select id='brokers'></select>
+			<input type="text" id="bapikey" placeholder="API Key" />
+			<input type="Password" id="bsecret" placeholder="Secret Key" />
+			<img class="addbroker" onclick='addBroker()' src='https://www.shareicon.net/download/2017/02/09/878611_green.svg' style='height: 14px;'/>
 
 
 
-		<input type="submit" value="Update"/>
-	</form>
+			<input type="submit" value="Update"/>
+		</form>
 
-	<div id="error"></div>
-	<img id="loader" src="https://i.pinimg.com/originals/16/4d/3e/164d3e03f742b3b0765e569536844bd1.gif" style="display: none;"/>
+		<div id="error"></div>
+		<img id="loader" src="https://i.pinimg.com/originals/16/4d/3e/164d3e03f742b3b0765e569536844bd1.gif" style="display: none;"/>
 
-	<form id="newuser" style="display: %display_form%" action="javaScript:newuser()">
-		<h1>New User</h1>
-		Email: <input id="email" type="email" name="email" required><br>
-		Password: <input id="password" type="password" name="password" required><br>
+		<form id="newuser" style="display: %display_form%" action="javaScript:newuser()">
+			<h1>New User</h1>
+			Email: <input id="email" type="email" name="email" required><br>
+			Password: <input id="password" type="password" name="password" required><br>
 
-		<input type="submit" value="Create User"/>
-	</form>
+			<input type="submit" value="Create User"/>
+		</form>
 
-	<input type="button" onclick="javascript:logout()" value="Log Out" />
+		<input type="button" onclick="javascript:logout()" value="Log Out" />
+
+	</div>
 
 	<script>
 
@@ -136,11 +141,6 @@
 				loader.style.display = "none";
 				document.cookie = "";
 			});
-		}
-
-		function logout() {
-			document.cookie = 'apikey=;expires=Thu, 01 Jan 1970 00:00:01 GMT;';
-			window.location.reload();
 		}
 
 		function deleteBroker(broker) {

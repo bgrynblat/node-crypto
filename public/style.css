@@ -1,6 +1,57 @@
-.body {
-
+body {
+	margin: 0px;
+	font-family: "Arial";
+	font-size: small;
 }
+
+.content {
+	padding: 10px;
+}
+
+/* HEADER */
+
+.header {
+	display: inline-block;
+	padding: 10px;
+	background-color: #aaa;
+	width: 100%;
+}
+
+.header .pages {
+	display: inline-block;
+}
+
+.header .pages a {
+	padding: 10px;
+	color: black;
+	background-color: #aaa;
+	text-decoration: none;
+	font-size: large;
+}
+
+.header .pages a:hover {
+	background-color: #555;
+	padding: 10px;
+	color: #ddd;
+}
+
+.header .logout {
+	display: inline-block;
+    background-color: #c00;
+    cursor: pointer;
+    padding: 10px;
+    position: absolute;
+    right: 0;
+    font-size: large;
+    top: 0;
+    color: white;
+}
+
+.header .logout:hover {
+    background-color: #d00;
+}
+
+/* DASHBOARD */
 
 .currency {
 	margin: 10px 0 0 0;
@@ -24,7 +75,6 @@
 }
 
 .pair .name {
-	font-size: large;
 	margin: 0 10px 0 10px;
 }
 
@@ -47,6 +97,12 @@
 .currency p.broker {
 	float: right;
 	margin-right: 10px;
+}
+
+.time {
+	font-size: x-small;
+	width: 50px;
+	max-height: 10px;
 }
 
 /*ACCOUNT PAGE*/

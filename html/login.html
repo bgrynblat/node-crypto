@@ -5,6 +5,9 @@
 	  src="https://code.jquery.com/jquery-3.2.1.min.js"
 	  integrity="sha256-hwg4gsxgFZhOsEEamdOYGBf13FyQuiTwlAQgxVSNgt4="
 	  crossorigin="anonymous"></script>
+
+	<title>Login</title>
+    <link rel="stylesheet" type="text/css" href="/public/style.css">
 </head>
 
 <body>
@@ -37,15 +40,16 @@
 		}
 	</script>
 
-	<form id="login" action="javaScript:login()">
-		Email: <input id="email" type="text" name="email" required><br>
-  		Password: <input id="password" type="password" name="password" required><br>
-		<input type="submit" value="Log In" />
-	</form>
+	<div class="content">
+		<form id="login" action="javaScript:login()">
+			Email: <input id="email" type="text" name="email" required><br>
+	  		Password: <input id="password" type="password" name="password" required><br>
+			<input type="submit" value="Log In" />
+		</form>
 
-	<div id="error"></div>
-	<img id="loader" src="https://i.pinimg.com/originals/16/4d/3e/164d3e03f742b3b0765e569536844bd1.gif" style="display: none;"/>
-
+		<div id="error"></div>
+		<img id="loader" src="https://i.pinimg.com/originals/16/4d/3e/164d3e03f742b3b0765e569536844bd1.gif" style="display: none;"/>
+	</div>
 </body>
 
 </html>

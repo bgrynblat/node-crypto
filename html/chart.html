@@ -2,13 +2,28 @@
 
 <head>
 	<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.7.0/Chart.bundle.min.js"></script>
+	<script
+	  src="https://code.jquery.com/jquery-3.2.1.min.js"
+	  integrity="sha256-hwg4gsxgFZhOsEEamdOYGBf13FyQuiTwlAQgxVSNgt4="
+	  crossorigin="anonymous"></script>
+
+	<title>Chart</title>
+    <link rel="stylesheet" type="text/css" href="/public/style.css">
 </head>
 
 <body>
 
-	<div id="charts"></div>
+	%header%
+
+	<div class="content">
+		<select id='pairs' onchange="loadPage()"></select>
+		<div id="charts">
+		</div>
+
+	</div>
 	<script>
 
+	var pairs = %pairs%;
 	var data = %data%;
 
 	window.chartColors = {
@@ -46,6 +61,22 @@
 	// 	}
 	// }
 
+	var pair = document.location.pathname.split("/")[2];
+	// console.log(pair);
+
+	$('select#pairs')[0].innerHTML = "";
+	for(var i=0; i<Object.keys(pairs).length; i++) {
+		$('select#pairs').append($('<option>', {
+		    value: Object.keys(pairs)[i],
+		    text: Object.keys(pairs)[i]
+		}));
+
+		if($('select#pairs option')[i].value == pair)
+			$('select#pairs option')[i].selected = true;
+	}
+
+
+
 	var charts = document.getElementById("charts");
 
 	var interval = 5000;
@@ -59,7 +90,7 @@
 		datasets[pair] = [];
 		times[pair] = [];
 
-		console.log(pair);
+		// console.log(pair);
 
 		for(var i in array) {	//LOOP THROUGH PAIR DATA HISTORY
 			var hh = array[i];	//hh = { time: 1506606440551, values: {"KRAKEN":{"value":"3545.30000","volume":"9753.93359752","time":"2017-09-28T13:47:15.938Z"}} }
@@ -179,6 +210,7 @@
 
 		var ctx = document.getElementById("c"+index).getContext('2d');
 		var myChart = new Chart(ctx, {
+			title: {text:"TEST"},
 		    type: 'line',
 		    data: {
 	            labels: times[pair],
@@ -202,6 +234,11 @@
 		        }
 		    }
 		});
+	}
+
+	function loadPage() {
+		var selected = $('select#pairs')[0].value;
+		window.location = "/charts/"+selected;
 	}
 
 	</script>

@@ -575,6 +575,7 @@ function exitHandler() {
 
 function awaitResult(req, res, now) {
 	if(global.tmp[now] == undefined) return;
+	if(req.user.brokers == undefined)	req.user.brokers = {};
 
 	if(global.tmp[now].received == Object.keys(req.user.brokers).length) {
 		res.status(200).send(global.tmp[now].result);

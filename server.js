@@ -414,10 +414,20 @@ function clearMemory() {
 }
 
 function autoClear() {
-	var nb = global.history;
-	// for(var i in global.pairs)
-	// 	nb += global.pairs[i].history.length;
+	for(var i in global.pairs) {
+		var pair = global.pairs[i];
+		for(var j in pair.values) {
+			var t = new Date(pair.values[j].time).getTime();
+			if(Date.now()-t > 3600000) {
+				console.log("TOO OLD : Delete", j, pair.values[j])
+				delete pair.values[j];
+			}
+		}
 
+	}
+
+	var nb = global.history.length;
+	
 	if(nb >= 200000) {
 		dumpMemory();
 		clearMemory();

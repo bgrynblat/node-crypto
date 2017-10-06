@@ -74,24 +74,22 @@ global.currencies = {
 }
 
 global.pairs = {
-	BTCUSD : {brokers: ["KRAKEN", "BITFINEX", "COINBASE", "POLONIEX"], threshold: 20, default_buy_price: 6, last_notification: 0},
-	ETHUSD : {brokers: ["KRAKEN", "BITFINEX", "POLONIEX"], threshold: 20, default_buy_price: 6, last_notification: 0},
-	LTCUSD : {brokers: ["KRAKEN", "BITFINEX"], threshold: 20, default_buy_price: 6, last_notification: 0},
-	BTCEUR : {brokers: ["KRAKEN"], threshold: 1, default_buy_price: 6, last_notification: 0},
-	ETHEUR : {brokers: ["KRAKEN"], threshold: 1, default_buy_price: 6, last_notification: 0},
-	LTCEUR : {brokers: ["KRAKEN"], threshold: 1, default_buy_price: 6, last_notification: 0},
-	BTCAUD : {brokers: ["ACX"], threshold: 1, default_buy_price: 6, last_notification: 0},
-	ETHBTC : {brokers: ["KRAKEN", "BITFINEX", "COINBASE", "POLONIEX", "BITREX"], threshold: 0.002, default_buy_price: 6, last_notification: 0},
-	LTCBTC : {brokers: ["KRAKEN", "BITFINEX", "COINBASE", "POLONIEX", "BITREX"], threshold: 0.002, default_buy_price: 6, last_notification: 0},
-	XMRBTC : {brokers: ["POLONIEX", "BITFINEX", "KRAKEN", "BITREX"], threshold: 1, default_buy_price: 6, last_notification: 0},
-	DASHBTC: {brokers: ["POLONIEX", "KRAKEN", "BITREX"], threshold: 1, default_buy_price: 6, last_notification: 0},
-	ZECBTC: {brokers: ["POLONIEX", "BITFINEX", "KRAKEN", "BITREX"], threshold: 1, default_buy_price: 6, last_notification: 0},
-	NEOBTC: {brokers: ["BITFINEX", "BITREX"], threshold: 1, default_buy_price: 6, last_notification: 0},
-
-	ETCBTC: {brokers: ["BITFINEX", "BITREX", "POLONIEX"], threshold: 1, default_buy_price: 6, last_notification: 0},
-	BCHBTC: {brokers: ["BITFINEX", "BITREX", "POLONIEX"], threshold: 1, default_buy_price: 6, last_notification: 0},
-	OMGBTC: {brokers: ["BITFINEX", "BITREX", "POLONIEX"], threshold: 1, default_buy_price: 6, last_notification: 0},
-
+	BTCUSD : {brokers: ["KRAKEN", "BITFINEX", "COINBASE", "POLONIEX"], trade: false, threshold: 20, default_buy_price: 6, last_notification: 0},
+	ETHUSD : {brokers: ["KRAKEN", "BITFINEX", "POLONIEX"], trade: false, threshold: 20, default_buy_price: 6, last_notification: 0},
+	LTCUSD : {brokers: ["KRAKEN", "BITFINEX"], trade: false, threshold: 20, default_buy_price: 6, last_notification: 0},
+	BTCEUR : {brokers: ["KRAKEN"], trade: false, threshold: 1, default_buy_price: 6, last_notification: 0},
+	ETHEUR : {brokers: ["KRAKEN"], trade: false, threshold: 1, default_buy_price: 6, last_notification: 0},
+	LTCEUR : {brokers: ["KRAKEN"], trade: false, threshold: 1, default_buy_price: 6, last_notification: 0},
+	BTCAUD : {brokers: ["ACX"], trade: false, threshold: 1, default_buy_price: 6, last_notification: 0},
+	ETHBTC : {brokers: ["KRAKEN", "BITFINEX", "COINBASE", "POLONIEX", "BITREX"], trade: true, threshold: 0.002, default_buy_price: 6, last_notification: 0},
+	LTCBTC : {brokers: ["KRAKEN", "BITFINEX", "COINBASE", "POLONIEX", "BITREX"], trade: true, threshold: 0.002, default_buy_price: 6, last_notification: 0},
+	XMRBTC : {brokers: ["POLONIEX", "BITFINEX", "KRAKEN", "BITREX"], trade: true, threshold: 1, default_buy_price: 6, last_notification: 0},
+	DASHBTC: {brokers: ["POLONIEX", "KRAKEN", "BITREX"], trade: true, threshold: 1, default_buy_price: 6, last_notification: 0},
+	ZECBTC: {brokers: ["POLONIEX", "BITFINEX", "KRAKEN", "BITREX"], trade: true, threshold: 1, default_buy_price: 6, last_notification: 0},
+	NEOBTC: {brokers: ["BITFINEX", "BITREX"], trade: true, threshold: 1, default_buy_price: 6, last_notification: 0},
+	ETCBTC: {brokers: ["BITFINEX", "BITREX", "POLONIEX"], trade: true, threshold: 1, default_buy_price: 6, last_notification: 0},
+	BCHBTC: {brokers: ["BITFINEX", "BITREX", "POLONIEX"], trade: true, threshold: 1, default_buy_price: 6, last_notification: 0},
+	OMGBTC: {brokers: ["BITFINEX", "BITREX", "POLONIEX"], trade: true, threshold: 1, default_buy_price: 6, last_notification: 0},
 };
 
 global.archiving = true;
@@ -234,6 +232,8 @@ async function updateTickerValue(pair) {
 				if(high == undefined || pp.values[j].value > high.value)	high = {value: pp.values[j].value, from: j};
 			}
 
+			pp.low = low;
+			pp.high = high;
 			pp.diff = high.value-low.value;
 			// if(pp.diff < 0)	break;
 
@@ -242,12 +242,12 @@ async function updateTickerValue(pair) {
 				// console.log("DIFF "+pair+" ("+high.from+" > "+low.from+"): "+pp.diff+" "+pair.substr(3));
 			// }
 
-			if(pp.diff >= global.pairs[pair].threshold) {
+			if(pp.trade && (pp.diff >= global.pairs[pair].threshold)) {
 				var msg = "DIFF "+pair+" ("+high.from+" > "+low.from+"): "+pp.diff+" "+pair.substr(3);
-				if(pair.last_notification+300000 < Date.now()) {
-					pair.last_notification = Date.now();
-					// sendNotification("", msg);
-				}
+				// if(pair.last_notification+300000 < Date.now()) {
+				// 	pair.last_notification = Date.now();
+				// 	// sendNotification("", msg);
+				// }
 			}
 
 

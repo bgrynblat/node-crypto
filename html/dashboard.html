@@ -33,7 +33,7 @@
 		grey: 'rgb(201, 203, 207)'
 	};
 
-	updateHTML2();
+	updateHTML3();
 	setInterval(updateData, 10000);
 	setInterval(updateTimes, 1000);
 
@@ -41,7 +41,7 @@
 		$.get("/api/pairs", function(ret) {
 				// console.log(ret);
 				data = ret;
-				updateHTML2();
+				updateHTML3();
 			}).fail(function(error) {
 				console.log("ERROR", error);
 			});
@@ -80,28 +80,79 @@
 					var cc = currencies[ca].name;
 					var logo = currencies[ca].logo;
 
-					html += "<div class='pair'><img src='"+logo+"' style='height: 20px;'/><a href='/charts/"+pair+"' class='name'>"+cc+" ("+ca+")</a>";
+					html += "<div class='pair'><div class='currency'><h2><img src='"+logo+"' style='height: 20px;'/><a href='/charts/"+pair+"' class='name'>"+cc+" ("+ca+")</a></h2>";
+					html += "<div class='diff'>TEST</div></div>";
 
-						for(var broker in data[pair].values) {
-							var bb = "<div class='broker'><div class='"+broker.toLowerCase()+"'>"+broker;
+					for(var broker in data[pair].values) {
+						var bb = "<div class='broker'><div class='"+broker.toLowerCase()+"'>"+broker;
 
-							var val = (data[pair].values[broker].value == undefined ? "?" : parseFloat(data[pair].values[broker].value+"").toFixed(4));
+						var val = (data[pair].values[broker].value == undefined ? "?" : parseFloat(data[pair].values[broker].value+"").toFixed(4));
 
-							bb += "<div class='value'>"+val+"</div>";
+						bb += "<div class='value'>"+val+"</div>";
 
-							var t = (((Date.now()-(new Date(data[pair].values[broker].time).getTime()))/1000).toFixed(0));
-							t = (t == "NaN" ? "" : t+"s ago");
+						var t = (((Date.now()-(new Date(data[pair].values[broker].time).getTime()))/1000).toFixed(0));
+						t = (t == "NaN" ? "" : t+"s ago");
 
-							bb += "<div id='"+broker+"_"+pair+"_time' class='time'>"+t+"</div></div>";
-							bb += "</div>";
-							html += bb;
-						}
+						bb += "<div id='"+broker+"_"+pair+"_time' class='time'>"+t+"</div></div>";
+						bb += "</div>";
+						html += bb;
+					}
 
 					html += "</div>";
 				}
 			}
 
 			html += "</div>";
+
+			$("#pairs")[0].innerHTML += html;
+
+			// console.log(cur, $("#"+cur).children().length);
+			if($("#"+cur+" .pair").children().length == 0)	$("#"+cur).css("display", "none");
+		}
+	}
+
+	function updateHTML3() {
+		$("#pairs")[0].innerHTML = "";
+		for(var cur in currencies) {
+			var html = "";
+			html += "<table class='currency' id='"+cur+"'>";
+			html += "<col width='20%'><col>";
+			html += "<tr><th colspan=2><img src='"+currencies[cur].logo+"'/> "+currencies[cur].name+" ("+cur+")</th></tr>";
+
+			for(var pair in data) {
+				if(pair.endsWith(cur)) {
+
+					var ca = pair.replace(cur, '');
+					var cc = currencies[ca].name;
+					var logo = currencies[ca].logo;
+
+					html += "<tr class='pair'><td class='currency'><img src='"+logo+"'/><a href='/charts/"+pair+"' class='name'>"+cc+" ("+ca+")</a>";
+					
+					var d = parseFloat(data[pair].diff).toFixed(4);
+					if(d > 0)	html += "<div class='diff'>"+data[pair].high.from+" > "+data[pair].low.from+" (+"+d+" "+cur+")</div>";
+
+					html += "</td><td>"
+
+					for(var broker in data[pair].values) {
+						var bb = "<div class='broker'><div class='"+broker.toLowerCase()+"'>"+broker;
+
+						var val = (data[pair].values[broker].value == undefined ? "?" : parseFloat(data[pair].values[broker].value+"").toFixed(4));
+
+						bb += "<div class='value'>"+val+"</div>";
+
+						var t = (((Date.now()-(new Date(data[pair].values[broker].time).getTime()))/1000).toFixed(0));
+						t = (t == "NaN" ? "" : t+"s ago");
+
+						bb += "<div id='"+broker+"_"+pair+"_time' class='time'>"+t+"</div></div>";
+						bb += "</div>";
+						html += bb;
+					}
+
+					html += "</tr>";
+				}
+			}
+
+			html += "</table>";
 
 			$("#pairs")[0].innerHTML += html;
 

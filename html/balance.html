@@ -51,11 +51,11 @@
 				var html = "<div>Total Balance</div>";
 				for(var cur in obj) {
 					if(currencies[cur] != undefined) {
-						html += "<div class='currency'><img src='"+currencies[cur].logo+"' />"+currencies[cur].name+" ("+cur+")<p>"+obj[cur].total+"</p>";
+						html += "<div class='currency'><h2><img src='"+currencies[cur].logo+"' />"+currencies[cur].name+" ("+cur+")<div>"+obj[cur].total+"</div></h2>";
 
 						for(var b in obj[cur].brokers) {
 							var pcent = (obj[cur].brokers[b]*100/obj[cur].total).toFixed(1);
-							html += "<p class='broker "+b.toLowerCase()+"'>"+b+" ("+pcent+"%)</p>";
+							html += "<div class='broker "+b.toLowerCase()+"'>"+b+" ("+pcent+"%)</div>";
 						}
 
 						html += "</div>";

@@ -53,28 +53,43 @@ body {
 
 /* DASHBOARD */
 
-.currency {
+table.currency {
 	margin: 10px 0 0 0;
 	border: 1px solid #888;
 	border-radius: 5px;
+	width: 100%;
+	font-size: small;
+	text-align: left;
 }
 
-.currency h1 {
-	font-size: large;
-	border-bottom: 1px solid #888;
-	margin: 0;
-	padding: 5px;
-}
-
-.pair {
+table.currency th {
+	font-size: medium;
 	border-bottom: 1px solid #888;
 }
 
-.broker {
+table.currency td a {
+	vertical-align: super;
+}
+
+table.currency td .diff {
+	font-size: x-small;
+	margin-left: 10px;
+}
+
+.pair .broker {
 	display: inline-block;
 }
 
-.pair .name {
+.pair .currency {
+    margin: 0 10px 0 0;
+}
+
+.pair .currency h2 {
+	display: inline-block;
+    font-size: small;
+}
+
+.pair .currency h2 .name {
 	margin: 0 10px 0 10px;
 }
 
@@ -84,24 +99,41 @@ body {
 	padding: 5px;
 }
 
-.currency img {
-	height: 20px;
-	margin-left: 10px;
+#balance .currency {
+	margin: 10px;
 }
 
-.currency p {
+#balance .currency h2 div {
+	font-size: medium;
+	font-weight: bold;
+}
+
+
+#balance .currency h2 {
+	display: inline-block;
+	width: 20%;
+	font-size: small;
+	font-weight: normal;
+}
+
+.currency img {
+	height: 20px;
+}
+
+#balance .currency div {
 	display: inline-block;
 	margin-left: 10px;
 }
 
-.currency p.broker {
-	float: right;
+#balance .currency div.broker {
+	/*float: right;*/
 	margin-right: 10px;
+	padding: 10px;
 }
 
 .time {
 	font-size: x-small;
-	width: 50px;
+	width: 40px;
 	max-height: 10px;
 }
 

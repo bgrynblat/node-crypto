@@ -738,6 +738,8 @@ app.get("/api/pairs", auth, function(req, res) {
 	res.status(200).send(global.pairs);
 });
 
+app.use("/.well-known", express.static('.well-known'));
+
 
 global.verbose = false;
 var port = process.env.PORT || 5999;
@@ -766,11 +768,13 @@ var server_https = https.createServer(options, app).listen(port_https, function(
 });
 
 var http = express();
-http.get('/', function(req,res) {
-    var redirect = 'https://'+req.get('host')+req.url;
-        // console.log(redirect)
-    res.redirect(redirect);
-});
+//http.get('/', function(req,res) {
+//    var redirect = 'https://'+req.get('host')+req.url;
+//        // console.log(redirect)
+//    res.redirect(redirect);
+//});
+
+http.use("/.well-known", express.static('.well-known'));
 
 var server_http = http.listen(port);
 console.log('HTTP:'+port+' HTTPS:'+port_https);

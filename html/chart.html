@@ -20,11 +20,17 @@
 		<div id="charts">
 		</div>
 
+		<div id="gain">
+			<canvas id="cgain" width="400" height="200"></canvas>
+		</div>
+
 	</div>
 	<script>
 
 	var pairs = %pairs%;
 	var data = %data%;
+
+	%data2%
 
 	window.chartColors = {
 		red: 'rgb(255, 99, 132)',
@@ -240,6 +246,36 @@
 		var selected = $('select#pairs')[0].value;
 		window.location = "/charts/"+selected;
 	}
+
+	function loadGainChart() {
+		if(data2 == undefined)	return;
+		var ctx = document.getElementById("cgain").getContext('2d');
+		var myChart = new Chart(ctx, {
+		    type: 'line',
+		    data: {
+	            labels: data2.x,
+	            datasets: [{
+						label: "Gain BTC ("+pairs[pair].high.from+"/"+pairs[pair].low.from+")",
+	                    fill: false,
+	                    backgroundColor: window.chartColors.blue,
+	                    borderColor: window.chartColors.blue,
+	                    data: data2.y
+					}]
+	        },
+		    options: {
+		        scales: {
+		        	xAxes: [{
+			            gridLines : {
+			                display : false,
+			            }
+			        }],
+		            // yAxes: yaxes[pair],
+		        }
+		    }
+		});
+	}
+
+	loadGainChart();
 
 	</script>
 

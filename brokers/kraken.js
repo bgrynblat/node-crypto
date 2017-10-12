@@ -13,7 +13,13 @@ const currencies = {
 	XXBT: "BTC",
 	XLTC: "LTC",
 	XETH: "ETH",
-	XUSD: "USD"
+	XUSD: "USD",
+	DASH: "DASH",
+	USDT: "USDT",
+	XETC: "ETC",
+	XXMR: "XMR",
+	XBCH: "BCH",
+	XZEC: "ZEC"
 };
 
 const pairs = {
@@ -27,13 +33,8 @@ const pairs = {
 	LTCBTC: "LTCXBT",
 	DASHBTC: "DASHXBT",
 	ZECBTC: "ZECXBT",
-	XMRBTC: "XMRXBT"
-};
-
-const withdraw_fees = {
-	LTC: 0.001,
-	BTC: 0.001,
-	ETH: 0.005
+	XMRBTC: "XMRXBT",
+	ETCBTC: "ETCXBT"
 };
 
 // Default options
@@ -98,6 +99,20 @@ const rawRequest = async (url, headers, data, timeout) => {
 class KrakenClient {
 	constructor(key, secret, options) {
 		this.config = Object.assign({ key, secret }, defaults, options);
+
+		this.withdraw_fees = {
+			LTC: 0.001,
+			BTC: 0.001,
+			ETH: 0.005,
+			EUR: 0.09,
+			USDT: 5,
+			XRP: 0.02,
+			DASH: 0.005,
+			XMR: 0.05,
+			ETC: 0.005,
+			ZEC: 0.0001,
+			BCH: 0.001,
+		};
 	}
 
 	getTickerValue(pair) {

@@ -6,3 +6,4 @@ memdata.json
 keys
 certificates/*.pem
 *.bak
+.DS_Store

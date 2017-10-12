@@ -15,6 +15,7 @@ body {
 	padding: 10px;
 	background-color: #aaa;
 	width: 100%;
+	height: 20px;
 }
 
 .header .pages {
@@ -42,9 +43,10 @@ body {
     padding: 10px;
     position: absolute;
     right: 0;
-    font-size: large;
+    font-size: medium;
     top: 0;
     color: white;
+    line-height: 20px;
 }
 
 .header .logout:hover {
@@ -128,6 +130,12 @@ table.currency td .diff {
 #balance .currency div.broker {
 	/*float: right;*/
 	margin-right: 10px;
+	padding: 10px;
+}
+
+#balance .total {
+	/*float: right;*/
+	margin-left: 10px;
 	padding: 10px;
 }
 

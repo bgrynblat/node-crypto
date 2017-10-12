@@ -91,6 +91,19 @@ class Poloniex {
 	constructor(key, secret, options) {
 		this.config = Object.assign({ key, secret }, defaults, options);
 
+		this.withdraw_fees = {
+			LTC: 0.001,
+			BTC: 0.0001,
+			ETH: 0.005,
+			BCH: 0.0001,
+			OMG: 0.1,
+			ZEC: 0.001,
+			XRP: 0.15,
+			DASH: 0,
+			ETC: 0.01,
+			XMR: 0.05,
+		};
+
 		this.fetchTickerValue();
 		setInterval(this.fetchTickerValue, 5000);
 		setInterval(this.processRequest, 1000, this);

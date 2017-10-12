@@ -46,6 +46,11 @@
 			<input type="submit" value="Create User"/>
 		</form>
 
+		<form id="requests">
+			<h1>Requests in progress</h1>
+			<div></div>
+		</form>
+
 		<input type="button" onclick="javascript:logout()" value="Log Out" />
 
 	</div>
@@ -87,6 +92,14 @@
 					    text: brokers[i]
 					}));
 				}
+			}
+			
+			if(data.requests == undefined)	data.requests = [];
+			
+			$("#requests div")[0].innerHTML = "";
+			for(var i in data.requests) {
+				var req = data.requests[i]
+				$("#requests div")[0].innerHTML += "<div class='request'>"+new Date(req.started_at)+" : "+req.details.step+" "+req.pair+" "+req.amount+" "+req.broker1+"=>"+req.broker2+" | diff:"+req.details.diff+" | expected gain:"+req.details.expected_gain	+"</div>";
 			}
 		}
 

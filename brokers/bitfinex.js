@@ -38,12 +38,6 @@ const pairs = {
 	OMGBTC: "OMGBTC"
 };
 
-const withdraw_fees = {
-	LTC: 0.001,
-	BTC: 0.0005,
-	ETH: 0.01
-};
-
 // Default options
 const defaults = {
 	url     : 'https://api.bitfinex.com',
@@ -107,6 +101,21 @@ class Bitfinex {
 		}
 
 		this.config = Object.assign({ key, secret }, defaults, options);
+
+		this.withdraw_fees = {
+			LTC: 0.001,
+			BTC: 0.0005,
+			ETH: 0.01,
+			BCH: 0.0005,
+			NEO: 0,
+			OMG: 0.1,
+			ZEC: 0.001,
+			XRP: 0.02,
+			DASH: 0.01,
+			ETC: 0.01,
+			XMR: 0.04,
+			USDT: 5.0,
+		};
 
 		this.updateTickers();
 		setInterval(this.updateTickers, 5000);

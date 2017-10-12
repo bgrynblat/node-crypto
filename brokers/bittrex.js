@@ -115,6 +115,21 @@ class Bittrex {
 
 		this.config = Object.assign({ key, secret }, defaults, options);
 
+		this.withdraw_fees = {
+			LTC: 0.01,
+			BTC: 0.001,
+			ETH: 0.005,
+			BCH: 0.001,
+			NEO: 0.025,
+			OMG: 0.1,
+			ZEC: 0.005,
+			XRP: 5,
+			DASH: 0.002,
+			ETC: 0.01,
+			XMR: 0.04,
+			USDT: 5.0,
+		};
+
 		this.updateTickers();
 		setInterval(this.updateTickers, 5000);
 		setInterval(this.processRequest, 1000, this);

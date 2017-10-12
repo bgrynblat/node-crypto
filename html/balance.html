@@ -23,6 +23,7 @@
 	<script>
 
 		var currencies = %currencies%;
+		var pairs = %pairs%;
 
 		function update() {
 			$("#error")[0].innerHTML = "";
@@ -48,7 +49,7 @@
 					}
 				}
 
-				var html = "<div>Total Balance</div>";
+				var html = "";
 				for(var cur in obj) {
 					if(currencies[cur] != undefined) {
 						html += "<div class='currency'><h2><img src='"+currencies[cur].logo+"' />"+currencies[cur].name+" ("+cur+")<div>"+obj[cur].total+"</div></h2>";
@@ -61,6 +62,33 @@
 						html += "</div>";
 					}
 				}
+
+				var btc = {value:0, cur: ""};
+				for(var cur in obj) {
+					if(cur == "BTC") {
+						btc.value+=obj[cur].total;
+						btc.cur += "BTC+";
+					} else {
+						if(pairs[cur+"BTC"] != undefined) {
+							var t = obj[cur].total*pairs[cur+"BTC"].low.value;
+							btc.value += t;
+							btc.cur += cur+"+";
+						} else if(pairs["BTC"+cur] != undefined) {
+							var t = obj[cur].total/pairs["BTC"+cur].low.value;
+							btc.value += t;
+							btc.cur += cur+"+";
+						}
+					}
+				}
+
+				var eur = btc.value*pairs.BTCEUR.low.value;
+				var usd = btc.value*pairs.BTCUSD.low.value;
+				// console.log(btc);
+
+				html += "<div>Total Balance</div>";
+				html += "<div class='total'>"+btc.value+" BTC ("+btc.cur.substring(0, btc.cur.length-1)+")</div>";
+				html += "<div class='total'>"+eur+" EURO</div>";
+				html += "<div class='total'>"+usd+" USD</div>";
 
 				form.innerHTML = html;
 

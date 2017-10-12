@@ -5,24 +5,19 @@ const bodyParser = require('body-parser');
 const crypto = require('crypto');
 const stdin = process.openStdin();
 
-const KrakenClient = require('./brokers/kraken.js');
-const BitfinexClient = require('./brokers/bitfinex.js');
-const ACXClient = require('./brokers/acx.js');
-const CoinbaseClient = require('./brokers/coinbase.js');
-const PoloniexClient = require('./brokers/poloniex.js');
-const BittrexClient = require('./brokers/bittrex.js');
-
-const key1 = process.env.KRAKEN_KEY;
-const secret1 = process.env.KRAKEN_SECRET;
 const onesignal_apikey = process.env.ONESIGNAL_APIKEY;
 const onesignal_appid = process.env.ONESIGNAL_APPID;
 
-const kraken = new KrakenClient(key1, secret1);
-const bitfinex = new BitfinexClient(key1, secret1);
-const acx = new ACXClient(key1, secret1);
-const coinbase = new CoinbaseClient(key1, secret1);
-const poloniex = new PoloniexClient(key1, secret1);
-const bittrex = new BittrexClient(key1, secret1);
+//==========================================================
+// BROKERS
+//==========================================================
+
+const kraken = new (require('./brokers/kraken.js'))();
+const bitfinex = new (require('./brokers/bitfinex.js'))();
+const acx = new (require('./brokers/acx.js'))();
+const coinbase = new (require('./brokers/coinbase.js'))();
+const poloniex = new (require('./brokers/poloniex.js'))();
+const bittrex = new (require('./brokers/bittrex.js'))();
 
 const brokers = {
 	"KRAKEN": kraken,
@@ -34,6 +29,14 @@ const brokers = {
 }
 
 //==========================================================
+// ALGORITHMS
+//==========================================================
+
+const Algos = {
+	Rotation: require('./algorithms/rotation.js')
+};
+
+//==========================================================
 // VARIABLES
 //==========================================================
 
@@ -41,9 +44,6 @@ global.users = {
 	accounts: {},
 	apikeys: {}
 };
-// global.accounts = {
-// 	notifications: true
-// };
 
 global.currencies = {
 	BTC: {name: "Bitcoin", logo: "http://logok.org/wp-content/uploads/2016/10/Bitcoin-Logo-640x480.png"},
@@ -58,7 +58,7 @@ global.currencies = {
 	NEO: {name: "NEO", logo: "https://bittrexblobstorage.blob.core.windows.net/public/ed823972-8cfd-4f1f-a91d-f638ba20bf02.png"},
 	ETC: {name: "Ethereum Classic", logo: "https://bittrexblobstorage.blob.core.windows.net/public/efc96992-1993-4a91-84cf-c04fea919788.png"},
 	BCH: {name: "Bitcoin Cash", logo: "https://coincheck.com/images/icons/icon_bch.svg"},
-	OMG: {name: "Omisego", logo: "http://neocashradio.com/wp-content/uploads/2017/08/omisego.jpg"},
+	OMG: {name: "OmiseGO", logo: "http://neocashradio.com/wp-content/uploads/2017/08/omisego.jpg"},
 	ADX: {name: "AdEx", logo: "https://bittrexblobstorage.blob.core.windows.net/public/75fe532b-ba7f-483a-a377-4c2b56517224.png"},
 	FUN: {name: "FunFair", logo: "https://bittrexblobstorage.blob.core.windows.net/public/15870ba6-ec5a-4261-8ee2-15e005536a71.png"},
 	DGB: {name: "Digibyte", logo: "https://bittrexblobstorage.blob.core.windows.net/public/f71e4e1a-9249-47a0-b4d0-53afa08ccbc3.png"},
@@ -81,20 +81,22 @@ global.pairs = {
 	ETHEUR : {brokers: ["KRAKEN"], trade: false, threshold: 1, default_buy_price: 6, last_notification: 0},
 	LTCEUR : {brokers: ["KRAKEN"], trade: false, threshold: 1, default_buy_price: 6, last_notification: 0},
 	BTCAUD : {brokers: ["ACX"], trade: false, threshold: 1, default_buy_price: 6, last_notification: 0},
-	ETHBTC : {brokers: ["KRAKEN", "BITFINEX", "COINBASE", "POLONIEX", "BITREX"], trade: true, threshold: 0.002, default_buy_price: 6, last_notification: 0},
-	LTCBTC : {brokers: ["KRAKEN", "BITFINEX", "COINBASE", "POLONIEX", "BITREX"], trade: true, threshold: 0.002, default_buy_price: 6, last_notification: 0},
-	XMRBTC : {brokers: ["POLONIEX", "BITFINEX", "KRAKEN", "BITREX"], trade: true, threshold: 1, default_buy_price: 6, last_notification: 0},
-	DASHBTC: {brokers: ["POLONIEX", "KRAKEN", "BITREX"], trade: true, threshold: 1, default_buy_price: 6, last_notification: 0},
-	ZECBTC: {brokers: ["POLONIEX", "BITFINEX", "KRAKEN", "BITREX"], trade: true, threshold: 1, default_buy_price: 6, last_notification: 0},
-	NEOBTC: {brokers: ["BITFINEX", "BITREX"], trade: true, threshold: 1, default_buy_price: 6, last_notification: 0},
-	ETCBTC: {brokers: ["BITFINEX", "BITREX", "POLONIEX"], trade: true, threshold: 1, default_buy_price: 6, last_notification: 0},
-	BCHBTC: {brokers: ["BITFINEX", "BITREX", "POLONIEX"], trade: true, threshold: 1, default_buy_price: 6, last_notification: 0},
-	OMGBTC: {brokers: ["BITFINEX", "BITREX", "POLONIEX"], trade: true, threshold: 1, default_buy_price: 6, last_notification: 0},
+	ETHBTC : {brokers: ["KRAKEN", "BITFINEX", "COINBASE", "POLONIEX", "BITREX"], trade: true, threshold: 0.0003, default_buy_price: 6, last_notification: 0},
+	LTCBTC : {brokers: ["KRAKEN", "BITFINEX", "COINBASE", "POLONIEX", "BITREX"], trade: true, threshold: 0.0003, default_buy_price: 6, last_notification: 0},
+	XMRBTC : {brokers: ["POLONIEX", "BITFINEX", "KRAKEN", "BITREX"], trade: true, threshold: 0.0003, default_buy_price: 6, last_notification: 0},
+	DASHBTC: {brokers: ["POLONIEX", "KRAKEN", "BITREX"], trade: true, threshold: 0.0003, default_buy_price: 6, last_notification: 0},
+	ZECBTC: {brokers: ["POLONIEX", "BITFINEX", "KRAKEN", "BITREX"], trade: true, threshold: 0.0003, default_buy_price: 6, last_notification: 0},
+	NEOBTC: {brokers: ["BITFINEX", "BITREX"], trade: true, threshold: 0.0003, default_buy_price: 6, last_notification: 0},
+	ETCBTC: {brokers: ["KRAKEN", "BITFINEX", "BITREX", "POLONIEX"], trade: true, threshold: 0.0003, default_buy_price: 6, last_notification: 0},
+	BCHBTC: {brokers: ["BITFINEX", "BITREX", "POLONIEX"], trade: true, threshold: 0.0003, default_buy_price: 6, last_notification: 0},
+	OMGBTC: {brokers: ["BITFINEX", "BITREX", "POLONIEX"], trade: true, threshold: 0.0003, default_buy_price: 6, last_notification: 0},
 };
 
 global.archiving = true;
 global.history = [];
 global.tmp = {};
+global.min_gain = 0.001;
+global.last_rotation = {};
 // global.send_orders = false;
 
 for(var i in global.pairs) {
@@ -196,6 +198,64 @@ function decryptKey(key, apikey, broker) {
 // FUNCTIONS
 //==========================================================
 
+// function algo(a, fee_high, fee_low, rate_high, rate_low) {
+// 	// 1 - Withdraw BTC broker high -> broker low
+// 	// 2 - Wait for transfer
+// 	// 3 - Buy XXX from BTC in broker low
+// 	// 4 - Wait for order to be completed
+// 	// 5 - Withdraw XXX broker low -> broker high
+// 	// 6 - Wait for transfer
+// 	// 7 - Sell XXX to BTC in broker high
+// 	// 8 - Wait for order to be completed
+// 	var e = (((a-fee_high)/rate_low)-fee_low)*rate_high;
+// 	return e;
+// }
+
+// function checkMinimumTradeValue(min_gain, fee_high, fee_low, rate_high, rate_low) {
+// 	var dd = -1;
+// 	var i = rate_high-rate_low;
+// 	var f = 0;
+// 	for(i = i; dd<min_gain; i+=0.005) {
+// 		f = algo(i, fee_high, fee_low, rate_high, rate_low);
+// 		dd = f-i;
+// 	}
+// 	i -= 0.005;
+
+// 	// console.log(i, "=>", f, "("+dd+")");
+// 	return {min: i, gain: dd};
+// }
+
+function rotation(user, pair, broker_high, broker_low, rate_high, rate_low, amount, diff) {
+	var bhigh = brokers[broker_high];
+	var blow = brokers[broker_low];
+
+	var cur_from = pair.reverse().substring(0, 3).reverse();
+	var cur_to = pair.replace(cur_from, "");
+
+	var fee1 = bhigh.withdraw_fees[cur_from];
+	var fee2 = blow.withdraw_fees[cur_to];
+
+	var request = {
+		id: generateHmac(Date.now()+""),
+		started_at: Date.now(),
+		type: "rotation",
+		broker1: broker_high,
+		broker2: broker_low,
+		status: "in progress",
+		pair: pair,
+		amount: amount,
+		details: {
+			step: 1,
+			diff: diff,
+			expected_gain: algo(amount, fee1, fee2, rate_high, rate_low)
+		}
+	};
+
+	if(user.requests == undefined)	user.requests = [];
+
+	user.requests.push(request);
+}
+
 async function updateTickerValue(pair) {
 	for(var i in global.pairs[pair].brokers) {
 		try {
@@ -242,84 +302,59 @@ async function updateTickerValue(pair) {
 				// console.log("DIFF "+pair+" ("+high.from+" > "+low.from+"): "+pp.diff+" "+pair.substr(3));
 			// }
 
-			if(pp.trade && (pp.diff >= global.pairs[pair].threshold)) {
-				var msg = "DIFF "+pair+" ("+high.from+" > "+low.from+"): "+pp.diff+" "+pair.substr(3);
+			// if(pair == "DASHBTC")	console.log(pair, pp.high.from, ">", pp.low.from, pp.diff, " => ", global.pairs[pair].threshold);
+			// if(pp.trade && pp.low.from != pp.high.from)	console.log(pair, pp.high.from, ">", pp.low.from, pp.diff);
+
+//======================================
+			// if(pp.trade && (pp.diff >= global.pairs[pair].threshold)) {
+			// 	var cur_from = pair.reverse().substring(0, 3).reverse();
+			// 	var cur_to = pair.replace(cur_from, "");
+
+			// 	if(brokers[low.from].withdraw_fees != undefined && brokers[high.from].withdraw_fees != undefined) {
+			// 		// console.log("====================="+pair+"======================")
+			// 		// var msg = "DIFF ("+high.from+" > "+low.from+"): "+pp.diff+" "+cur_from;
+			// 		// console.log(msg);
+
+			// 		var fee_high = brokers[high.from].withdraw_fees[cur_from];
+			// 		var fee_low = brokers[low.from].withdraw_fees[cur_to];
+			// 		// var ret = checkMinimumTradeValue(global.min_gain, fee_high, fee_low, high.value, low.value);
+			// 		// if(ret.min < 0.4) {
+			// 			// console.log(pair, "=> Invest", ret.min, cur_from, "get", ret.gain, cur_from, high.from, "=>", low.from);
+			// 			// console.log(low.from, "=>", brokers[low.from].withdraw_fees);
+
+			// 			for(var id in global.users.accounts) {
+			// 				var user = global.users.accounts[id];
+							
+			// 				if(user.apikey == "bb9ee66fd5d967acd7148d34516fe829ad463ab01b18aeb03fa0e3b2024c0f6f") {
+			// 					// var exists = false;
+			// 					// for(var j in user.requests) {
+			// 					// 	if(user.requests[j].pair == pair)	exists = true;
+			// 					// }
+			// 					// if(!exists)		rotation(user, pair, high.from, low.from, high.value, low.value, ret.min, pp.diff);
+			// 					var ret = new Algos.Rotation(pair, fee_high, fee_low, high.value, low.value, 0.001).checkMinimumTradeValue();
+			// 					if(ret.pair != global.last_rotation.pair) {
+			// 						global.last_rotation = ret;
+			// 						console.log(ret.pair, "=> Invest", ret.min, cur_from, "get", ret.gain, cur_from, high.from, "=>", low.from)
+			// 					}
+			// 				}
+			// 			}
+			// 		// }
+			// 	}
+//======================================
+
+
 				// if(pair.last_notification+300000 < Date.now()) {
 				// 	pair.last_notification = Date.now();
 				// 	// sendNotification("", msg);
 				// }
-			}
+			// }
 
 
 		} catch(error) {
 			console.log("ERROR FOR BROKER "+brokername+", PAIR : "+pair, error);
 		}
 	}
-
-	// var newval = parseFloat(res.result[Object.keys(res.result)[0]]["c"][0]);
-	// var curval = global.pairs[pair].current_value;
-
-	// var prevtrend = global.pairs[pair].trend+"";
-	// var newtrend;
-	// var v = newval/curval;
-	// if(v < 1) {
-	// 	newtrend = "down";		//DOWN
-
-	// }
-	// else if(v > 1) {
-	// 	newtrend = "up";		//UP
-	// }
-	// else {
-	// 	newtrend = "stable";	//STABLE
-	// }
-	
-	// if(prevtrend == newtrend)	global.pairs[pair].trending_for++;	//TREND HAS NOT CHANGED
-	// else {	// NEW TREND
-
-	// 	var tfor = global.pairs[pair].trending_for+0;
-	// 	var trend = (((newval-global.pairs[pair].trend_start_value)/global.pairs[pair].trend_start_value)*100)+prevtrend;
-	// 	var now = Date.now();
-
-	// 	if(trend < 100 && trend > -100) {
-	// 		var obj = {trend: trend, "for": tfor, starts_at: global.pairs[pair].trend_starts_at+0, ends_at: now, ends: newval};
-	// 		global.pairs[pair].history.push(obj);
-
-	// 		if(obj.trend > global.pairs[pair].threshold || obj.trend < -global.pairs[pair].threshold) {
-	// 			var msg = pair+" has "+(obj.trend < 0 ? "dropped -" : "raised +")+obj.trend.toFixed(3)+"%";
-	// 			sendNotification("", msg);
-	// 		}
-	// 	}
-
-	// 	global.pairs[pair].trending_for = 1;
-	// 	global.pairs[pair].trend_starts_at = now;
-	// 	global.pairs[pair].trend = newtrend;
-	// 	global.pairs[pair].trend_start_value = newval;
-	// }
-	// global.pairs[pair].current_value = newval;
-
-	// var obj = {trend: trend, "for": tfor, starts_at: global.pairs[pair].trend_starts_at+0, ends_at: now, ends: newval};
 }
-
-// function algorithm(pairname) {
-// 	// showValueOf(pairname);
-
-// 	if(!global.send_orders)	return;
-
-// 	var pair = global.pairs[pairname];
-// 	var nb_orders = Object.keys(pair.orders).length;
-// 	// if(pair.order_in_progress)	console.log("ORDER IN PROGRESS FOR PAIR "+pairname+"...");
-// 	if(nb_orders == 0) {
-// 		if(!pair.order_in_progress) {
-// 			// console.log("NO ORDER FOR PAIR "+pp);
-// 			// sendSellOrder(vof, vin);
-
-// 			// if(pair.last_order_type == "sell")		sendBuyOrder(pairname);
-// 			// else if(pair.last_order_type == "buy")	sendSellOrder(pairname);
-// 		}
-// 	} else {
-// 		// console.log("PAIR "+pp+" HAS "+nb_orders+" ORDER");
-// 	}
-// }
 
 function archive() {
 
@@ -482,6 +517,33 @@ function generateChartHTML(pairs, min) {
 	html = html.replace(/%pairs%/g, JSON.stringify(global.pairs));
 	var header = generateHeader();
 	html = html.replace(/%header%/g, header);
+
+
+	var pp = global.pairs[pairs[0]];
+
+	if(pp == undefined) {
+		html = html.replace(/%data2%/g, "");
+		return html;
+	}
+
+	var cur_from = pairs[0].reverse().substring(0, 3).reverse();
+	var cur_to = pairs[0].replace(cur_from, "");
+
+	// console.log(pp);
+	try {
+		var fee_high = brokers[pp.high.from].withdraw_fees[cur_from];
+		var fee_low = brokers[pp.low.from].withdraw_fees[cur_to];
+
+		if(fee_high == undefined || fee_low == undefined || pp.low.value >= pp.high.value) {
+			html = html.replace(/%data2%/g, "");
+		} else {
+			var ret = new Algos.Rotation(pairs[0], fee_high, fee_low, pp.high.value, pp.low.value, 0.003).getChartData(0.003);
+			html = html.replace(/%data2%/g, "var data2="+JSON.stringify(ret)+";");
+		}
+	} catch(error) {
+		html = html.replace(/%data2%/g, "");
+	}
+
 	return html;
 }
 
@@ -504,6 +566,7 @@ function generateAccountHTML(account) {
 function generateBalanceHTML(balance) {
 	var html = fs.readFileSync(__dirname+"/html/balance.html", {encoding: "utf-8"});
 	html = html.replace(/%currencies%/g, JSON.stringify(global.currencies));
+	html = html.replace(/%pairs%/g, JSON.stringify(global.pairs));
 
 	var header = generateHeader();
 	html = html.replace(/%header%/g, header);
@@ -596,6 +659,13 @@ function awaitResult(req, res, now) {
 	} else {
 		setInterval(awaitResult, 1000, req, res, now);
 	}
+}
+
+String.prototype.reverse = function() {
+    var splitString = this.split(""); // var splitString = "hello".split("");
+    var reverseArray = splitString.reverse(); // var reverseArray = ["h", "e", "l", "l", "o"].reverse();
+    var joinArray = reverseArray.join(""); // var joinArray = ["o", "l", "l", "e", "h"].join("");
+    return joinArray; // "olleh"
 }
 
 //===============================================================

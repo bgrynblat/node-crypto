@@ -23,7 +23,29 @@
 	<script>
 
 		var currencies = %currencies%;
-		var pairs = %pairs%;
+		var pairs = {};
+
+		$.get("https://api.coinmarketcap.com/v1/ticker/?convert=EUR", function(data) {
+			console.log(data);
+
+			for(var i in data) {
+				var cur = data[i];
+
+				if(cur.symbol == "BTC") {
+					pairs["BTCUSD"] = {value: cur.price_usd};
+					pairs["BTCEUR"] = {value: cur.price_eur};
+				}
+
+				pairs[cur.symbol+"BTC"] = {
+					value: cur.price_btc,
+				}
+			}
+
+
+
+			update();
+
+		});
 
 		function update() {
 			$("#error")[0].innerHTML = "";
@@ -70,19 +92,19 @@
 						btc.cur += "BTC+";
 					} else {
 						if(pairs[cur+"BTC"] != undefined) {
-							var t = obj[cur].total*pairs[cur+"BTC"].low.value;
+							var t = obj[cur].total*pairs[cur+"BTC"].value;
 							btc.value += t;
 							btc.cur += cur+"+";
 						} else if(pairs["BTC"+cur] != undefined) {
-							var t = obj[cur].total/pairs["BTC"+cur].low.value;
+							var t = obj[cur].total/pairs["BTC"+cur].value;
 							btc.value += t;
 							btc.cur += cur+"+";
 						}
 					}
 				}
 
-				var eur = btc.value*pairs.BTCEUR.low.value;
-				var usd = btc.value*pairs.BTCUSD.low.value;
+				var eur = btc.value*pairs.BTCEUR.value;
+				var usd = btc.value*pairs.BTCUSD.value;
 				// console.log(btc);
 
 				html += "<div>Total Balance</div>";
@@ -100,8 +122,6 @@
 				loader.style.display = "none";
 			});
 		}
-
-		update();
 
 	</script>
 
